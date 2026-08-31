@@ -1,0 +1,216 @@
+{
+  "version": 1,
+  "measuredAt": "2026-08-31",
+  "loudnessTargetLufs": -16.0,
+  "stations": [
+    {
+      "id": "nts-1",
+      "name": "NTS 1",
+      "city": "Лондон",
+      "stream": "https://stream-relay-geo.ntslive.net/stream",
+      "adapter": "nts",
+      "gain": 0.562,
+      "measuredLufs": -11.0,
+      "favorite": true,
+      "adapterId": "1"
+    },
+    {
+      "id": "dublab",
+      "name": "dublab",
+      "city": "Лос-Анджелес",
+      "stream": "https://dublab.out.airtime.pro/dublab_a",
+      "adapter": "airtime",
+      "gain": 0.977,
+      "measuredLufs": -15.8,
+      "favorite": true,
+      "adapterId": "dublab"
+    },
+    {
+      "id": "the-lot-radio",
+      "name": "The Lot Radio",
+      "city": "Нью-Йорк",
+      "stream": "https://livepeercdn.studio/hls/85c28sa2o8wppm58/index.m3u8",
+      "adapter": "hls",
+      "gain": 1.0,
+      "measuredLufs": -22.5,
+      "favorite": true,
+      "hls": true
+    },
+    {
+      "id": "cashmere-radio",
+      "name": "Cashmere Radio",
+      "city": "Берлін",
+      "stream": "https://cashmereradio.out.airtime.pro/cashmereradio_a",
+      "adapter": "airtime",
+      "gain": 0.457,
+      "measuredLufs": -9.2,
+      "favorite": true,
+      "adapterId": "cashmereradio"
+    },
+    {
+      "id": "rinse-fm",
+      "name": "Rinse FM",
+      "city": "Лондон",
+      "stream": "https://admin.stream.rinse.fm/proxy/rinse_uk/stream",
+      "adapter": "icy",
+      "gain": 0.335,
+      "measuredLufs": -6.5,
+      "favorite": true
+    },
+    {
+      "id": "somafm-drone-zone",
+      "name": "SomaFM Drone Zone",
+      "city": "Сан-Франциско",
+      "stream": "https://ice1.somafm.com/dronezone-256-mp3",
+      "adapter": "icy",
+      "gain": 0.955,
+      "measuredLufs": -15.6,
+      "favorite": true
+    },
+    {
+      "id": "kool-fm",
+      "name": "Kool FM",
+      "city": "Лондон",
+      "stream": "https://admin.stream.rinse.fm/proxy/kool/stream",
+      "adapter": "icy",
+      "gain": 0.403,
+      "measuredLufs": -8.1,
+      "favorite": false
+    },
+    {
+      "id": "swu-fm",
+      "name": "SWU FM",
+      "city": "Бристоль",
+      "stream": "https://admin.stream.rinse.fm/proxy/swu/stream",
+      "adapter": "icy",
+      "gain": 0.394,
+      "measuredLufs": -7.9,
+      "favorite": false
+    },
+    {
+      "id": "kiosk-radio",
+      "name": "Kiosk Radio",
+      "city": "Брюссель",
+      "stream": "https://kioskradiobxl.out.airtime.pro/kioskradiobxl_b",
+      "adapter": "airtime",
+      "gain": 0.668,
+      "measuredLufs": -12.5,
+      "favorite": false,
+      "adapterId": "kioskradiobxl"
+    },
+    {
+      "id": "intergalactic-fm",
+      "name": "Intergalactic FM",
+      "city": "Гаага",
+      "stream": "http://radio.intergalactic.fm/1",
+      "adapter": "icy",
+      "gain": 1.0,
+      "measuredLufs": -21.2,
+      "favorite": false
+    },
+    {
+      "id": "mutant-radio",
+      "name": "Mutant Radio",
+      "city": "Тбілісі",
+      "stream": "https://listen.radioking.com/radio/282820/stream/328621",
+      "adapter": "icy",
+      "gain": 1.0,
+      "measuredLufs": -20.4,
+      "favorite": false
+    },
+    {
+      "id": "operator-radio",
+      "name": "Operator Radio",
+      "city": "Роттердам",
+      "stream": "https://origin.streamnerd.nl/operator/operator/icecast.audio",
+      "adapter": "icy",
+      "gain": 0.832,
+      "measuredLufs": -14.4,
+      "favorite": false
+    },
+    {
+      "id": "radio-alhara",
+      "name": "Radio Alhara",
+      "city": "Віфлеєм",
+      "stream": "http://n02.radiojar.com/78cxy6wkxtzuv",
+      "adapter": "icy",
+      "gain": 0.977,
+      "measuredLufs": -15.8,
+      "favorite": false
+    },
+    {
+      "id": "wfmu",
+      "name": "WFMU",
+      "city": "Нью-Джерсі",
+      "stream": "https://stream0.wfmu.org/freeform-extrahigh-primary.aac",
+      "adapter": "icy",
+      "gain": 1.0,
+      "measuredLufs": -20.3,
+      "favorite": false
+    },
+    {
+      "id": "worldwide-fm",
+      "name": "Worldwide FM",
+      "city": "Лондон",
+      "stream": "https://worldwide-fm.radiocult.fm/stream",
+      "adapter": "radiocult",
+      "gain": 0.724,
+      "measuredLufs": -13.2,
+      "favorite": false,
+      "adapterId": "worldwide-fm"
+    },
+    {
+      "id": "somafm-groove-salad",
+      "name": "SomaFM Groove Salad",
+      "city": "Сан-Франциско",
+      "stream": "https://ice1.somafm.com/groovesalad-256-mp3",
+      "adapter": "icy",
+      "gain": 0.871,
+      "measuredLufs": -14.8,
+      "favorite": false
+    },
+    {
+      "id": "refuge-worldwide",
+      "name": "Refuge Worldwide",
+      "city": "Берлін",
+      "stream": "https://streaming.radio.co/s3699c5e49/listen",
+      "adapter": "radioco",
+      "gain": 0.525,
+      "measuredLufs": -10.4,
+      "favorite": false,
+      "adapterId": "s3699c5e49"
+    },
+    {
+      "id": "bytefm",
+      "name": "ByteFM",
+      "city": "Гамбург",
+      "stream": "http://uplink.byte.fm/bytefm-mainhq/mp3-192/",
+      "adapter": "icy",
+      "gain": 1.0,
+      "measuredLufs": -17.7,
+      "favorite": false
+    },
+    {
+      "id": "the-face-radio",
+      "name": "The Face Radio",
+      "city": "Бруклін",
+      "stream": "https://the-face-radio.radiocult.fm/stream",
+      "adapter": "radiocult",
+      "gain": 0.299,
+      "measuredLufs": -5.5,
+      "favorite": false,
+      "adapterId": "the-face-radio"
+    },
+    {
+      "id": "noods-radio",
+      "name": "Noods Radio",
+      "city": "Бристоль",
+      "stream": "https://noods-radio.radiocult.fm/stream",
+      "adapter": "radiocult",
+      "gain": 1.0,
+      "measuredLufs": -16.5,
+      "favorite": false,
+      "adapterId": "noods-radio"
+    }
+  ]
+}
