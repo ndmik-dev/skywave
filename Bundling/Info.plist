@@ -23,25 +23,18 @@
 	<!-- Menubar only: without this the app also shows up in the Dock. -->
 	<key>LSUIElement</key>
 	<true/>
-	<!-- Three stations in the catalog are still plain HTTP. Listed individually
-	     rather than allowing arbitrary loads. -->
+	<!-- Radio Alhara is the only station left on plain HTTP. Radiojar answers
+	     even an https:// request with a 302 to http:// on a rotating host
+	     (n02, n05, n0c…), so the exception has to cover the whole domain. -->
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSExceptionDomains</key>
 		<dict>
-			<key>radio.intergalactic.fm</key>
+			<key>radiojar.com</key>
 			<dict>
 				<key>NSExceptionAllowsInsecureHTTPLoads</key>
 				<true/>
-			</dict>
-			<key>n02.radiojar.com</key>
-			<dict>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<true/>
-			</dict>
-			<key>uplink.byte.fm</key>
-			<dict>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<key>NSIncludesSubdomains</key>
 				<true/>
 			</dict>
 		</dict>

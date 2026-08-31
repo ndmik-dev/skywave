@@ -5,13 +5,21 @@ import SkywaveKit
 struct StationList: View {
     @Bindable var state: AppState
 
+    /// A ScrollView reports an ideal height of zero, and MenuBarExtra sizes its
+    /// window to the ideal — so without an explicit height the list collapses.
+    private static let rowHeight: CGFloat = 27
+    private static let maxHeight: CGFloat = 380
+
+    private var height: CGFloat {
+        let rows = CGFloat(state.stations.count) * Self.rowHeight
+        return min(rows + 17, Self.maxHeight)
+    }
+
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
-                Section {
-                    ForEach(state.stations.filter(\.favorite)) { station in
-                        StationRow(station: station, state: state)
-                    }
+                ForEach(state.stations.filter(\.favorite)) { station in
+                    StationRow(station: station, state: state)
                 }
                 let rest = state.stations.filter { !$0.favorite }
                 if !rest.isEmpty {
@@ -23,7 +31,7 @@ struct StationList: View {
             }
             .padding(.vertical, 4)
         }
-        .frame(maxHeight: 380)
+        .frame(height: height)
     }
 }
 

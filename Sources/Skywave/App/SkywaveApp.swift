@@ -16,6 +16,16 @@ enum Main {
                 exit(1)
             }
         }
+        // Headless playback check, used to verify App Transport Security rules
+        // against the real bundle: --play <station-id> [seconds]
+        if let flag = CommandLine.arguments.firstIndex(of: "--play"),
+           flag + 1 < CommandLine.arguments.count {
+            let id = CommandLine.arguments[flag + 1]
+            let seconds = CommandLine.arguments.count > flag + 2
+                ? Double(CommandLine.arguments[flag + 2]) ?? 20
+                : 20
+            exit(MainActor.assumeIsolated { Headless.play(stationId: id, seconds: seconds) })
+        }
         SkywaveApp.main()
     }
 }
