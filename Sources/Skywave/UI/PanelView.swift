@@ -16,7 +16,7 @@ struct PanelView: View {
                 Divider()
                 StationList(state: state)
                 Divider()
-                Footer()
+                Footer(state: state)
             }
         }
         .frame(width: 300)
@@ -46,7 +46,7 @@ private struct OnAir: View {
                     .fixedSize(horizontal: false, vertical: true)
             } else {
                 Text("Nothing on air").font(.headline)
-                Text("Pick a station").font(.callout).foregroundStyle(.secondary)
+                Text("Pick a station · ⌥⌘P").font(.callout).foregroundStyle(.secondary)
             }
         }
         .padding(.horizontal, 12)
@@ -63,14 +63,35 @@ private struct OnAir: View {
 }
 
 private struct Footer: View {
+    @Bindable var state: AppState
+    @State private var startsAtLogin = false
+
     var body: some View {
-        HStack {
-            Spacer()
-            Button("Quit") { NSApplication.shared.terminate(nil) }
-                .buttonStyle(.borderless)
-                .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 4) {
+            if let message = state.loginItemError {
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .lineLimit(2)
+            }
+            HStack {
+                Toggle("Start at login", isOn: $startsAtLogin)
+                    .toggleStyle(.checkbox)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button("Quit") { NSApplication.shared.terminate(nil) }
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(.secondary)
+            }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
+        // Read once on appear, since the system owns the real value.
+        .onAppear { startsAtLogin = state.startsAtLogin }
+        .onChange(of: startsAtLogin) { _, enabled in
+            state.setStartsAtLogin(enabled)
+            startsAtLogin = state.startsAtLogin
+        }
     }
 }
