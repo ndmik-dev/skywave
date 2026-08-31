@@ -18,6 +18,9 @@ final class AppState {
     private(set) var loginItemError: String?
     /// Why the stream is being re-established, if it is.
     private(set) var reconnecting: ReconnectReason?
+    /// What is on air across the catalog, keyed by station id. Only the eight
+    /// polled stations can appear here — the rest reveal nothing until played.
+    private(set) var onAir: [String: NowPlaying] = [:]
 
     @ObservationIgnored private let player = StreamPlayer()
     @ObservationIgnored private let nowPlayingCenter = NowPlayingCenter()
@@ -25,6 +28,7 @@ final class AppState {
     @ObservationIgnored private let resilience = Resilience()
     @ObservationIgnored private var lastStation: Station?
     @ObservationIgnored private var pollTask: Task<Void, Never>?
+    @ObservationIgnored private var boardTask: Task<Void, Never>?
     @ObservationIgnored private var eventTask: Task<Void, Never>?
 
     /// Shows change on the hour and tracks every few minutes, so polling is lazy.
@@ -47,6 +51,46 @@ final class AppState {
 
         resilience.onReconnect = { [weak self] reason in self?.reconnect(reason) }
         resilience.start()
+    }
+
+    // MARK: - On air across the catalog
+
+    /// Refreshes the whole board while the panel is open, and stops when it closes.
+    func startWatchingOnAir() {
+        guard boardTask == nil else { return }
+        boardTask = Task {
+            while !Task.isCancelled {
+                await refreshOnAir()
+                try? await Task.sleep(for: .seconds(60))
+            }
+        }
+    }
+
+    func stopWatchingOnAir() {
+        boardTask?.cancel()
+        boardTask = nil
+    }
+
+    private func refreshOnAir() async {
+        let polled = stations.filter(\.adapter.isPolled)
+        let fetched = await withTaskGroup(of: (String, NowPlaying)?.self) { group in
+            for station in polled {
+                guard let adapter = Adapters.adapter(for: station) else { continue }
+                group.addTask {
+                    guard let playing = try? await adapter.fetch(station) else { return nil }
+                    return (station.id, playing)
+                }
+            }
+            var result: [String: NowPlaying] = [:]
+            for await entry in group {
+                if let entry { result[entry.0] = entry.1 }
+            }
+            return result
+        }
+        guard !Task.isCancelled else { return }
+        // Merged, not replaced, so a station that failed this round keeps its
+        // last known line instead of blinking out.
+        onAir.merge(fetched) { _, new in new }
     }
 
     // MARK: - Login item
@@ -148,6 +192,7 @@ final class AppState {
     private func apply(_ playing: NowPlaying, from station: Station) {
         guard isCurrent(station) else { return }
         nowPlaying = playing
+        onAir[station.id] = playing
         publish()
     }
 

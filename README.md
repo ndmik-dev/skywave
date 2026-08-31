@@ -9,13 +9,21 @@ Built with SwiftPM — there is no `.xcodeproj`, and Xcode is not required. The
 ## Build and run
 
 ```
-./Scripts/bundle.sh
-open build/Skywave.app
+./Scripts/bundle.sh --install
 ```
 
-The app is menubar-only (`LSUIElement`), so nothing appears in the Dock.
-`build/Skywave.app/Contents/MacOS/Skywave --check` verifies the bundle can find
-its catalog without launching the UI.
+Builds, installs to `/Applications` and restarts the app. Drop `--install` to
+build into `build/` only. The app is menubar-only (`LSUIElement`), so nothing
+appears in the Dock. `⌥⌘P` plays and stops from anywhere.
+
+Two headless modes run the real bundle, which is the only way to exercise its App
+Transport Security rules — a station blocked by ATS plays fine from a plain
+command-line build:
+
+```
+/Applications/Skywave.app/Contents/MacOS/Skywave --check
+/Applications/Skywave.app/Contents/MacOS/Skywave --play dublab 20
+```
 
 ## Checks
 

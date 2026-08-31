@@ -20,6 +20,8 @@ struct PanelView: View {
             }
         }
         .frame(width: 300)
+        .onAppear { state.startWatchingOnAir() }
+        .onDisappear { state.stopWatchingOnAir() }
     }
 }
 
@@ -39,7 +41,7 @@ private struct OnAir: View {
                     .buttonStyle(.borderless)
                     .help("Stop")
                 }
-                Text(subtitle(for: station))
+                Text(subtitle)
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
@@ -53,13 +55,13 @@ private struct OnAir: View {
         .padding(.vertical, 10)
     }
 
-    private func subtitle(for station: Station) -> String {
+    private var subtitle: String {
         if state.reconnecting != nil { return "Reconnecting…" }
         if state.isLoading { return "Connecting…" }
         if state.nowPlaying.isOffAir { return "Off air" }
         let lines = [state.nowPlaying.show, state.nowPlaying.track].compactMap { $0 }
-        // Several stations never report anything; the city is better than blank.
-        return lines.isEmpty ? station.city : lines.joined(separator: " · ")
+        // Twelve stations never report what is on, so there is nothing to say.
+        return lines.isEmpty ? "On air" : lines.joined(separator: " · ")
     }
 }
 
@@ -76,14 +78,22 @@ private struct Footer: View {
                     .lineLimit(2)
             }
             HStack {
-                Toggle("Start at login", isOn: $startsAtLogin)
-                    .toggleStyle(.checkbox)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                Text("⌥⌘P")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
                 Spacer()
-                Button("Quit") { NSApplication.shared.terminate(nil) }
-                    .buttonStyle(.borderless)
-                    .foregroundStyle(.secondary)
+                // Settings live behind a menu: the panel is for listening, and
+                // these are decided once.
+                Menu {
+                    Toggle("Start at login", isOn: $startsAtLogin)
+                    Divider()
+                    Button("Quit Skywave") { NSApplication.shared.terminate(nil) }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+                .fixedSize()
             }
         }
         .padding(.horizontal, 12)
