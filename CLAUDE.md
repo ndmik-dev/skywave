@@ -80,6 +80,36 @@ icy        метаданих через AVPlayerItem.timedMetadata, окрем�
 hls        The Lot Radio, Livepeer — AVPlayer грає нативно
 ```
 
+## Що з'ясувалося на реальних відповідях — 2026-09-01
+
+Усі вісім опитуваних станцій відповідають, форма збігається з планом, крім деталей:
+
+- **Radiocult:** назва шоу лежить у `result.content.title`. `result.metadata.title` —
+  це ім'я вихідного файлу («Sonic Cynefin w_ Mochyn Daer Aug 3 show.mp3»), годиться
+  лише як запасний варіант.
+- **Airtime** між шоу віддає `null` замість об'єкта в `shows.current` і `tracks.current`,
+  тому кожен вкладений об'єкт декодується поблажливо. Поле `name` треку має вигляд
+  «artist - title» і вироджується в « - title.mp3», коли артиста немає, — трек
+  збирається з `metadata.artist_name` + `metadata.track_title`.
+- **Airtime і NTS** екранують назви в HTML: `I Don&#039;t Wanna`, `&amp;`.
+
+## ICY-метадані — виміряно на всіх 11 станціях
+
+Ідентифікатор елемента — `icy/StreamTitle`, значення читається як рядок. NTS шле
+ще й `icy/json`, і там буквально порожній `{}`, тож фільтрувати за ідентифікатором
+обов'язково.
+
+- **8 з 11** віддають справжню назву.
+- **Kool FM, Rinse FM, SWU FM** (спільна інфраструктура Rinse) шлють незаповнену
+  заглушку «Now Playing info goes here» — відсіюється списком сміттєвих значень.
+- **SomaFM ×2, Operator Radio** не віддають AVPlayer нічого. Operator узагалі не
+  надсилає `icy-metaint`. SomaFM `icy-metaint: 45000` має, але лише під браузерним
+  User-Agent; підсунути заголовки через `AVURLAssetHTTPHeaderFieldsKey` не допомогло.
+  У SomaFM є власний JSON API — сьомий адаптер, якщо колись знадобиться.
+
+Три станції ще на `http://` (Intergalactic FM, Radio Alhara, ByteFM), тож в
+Info.plist прописані поіменні винятки ATS.
+
 ## Порядок сесій
 
 0. **AVPlayer + Icecast**, дві захардкоджені станції (NTS, SomaFM Drone Zone).
