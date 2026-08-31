@@ -35,14 +35,21 @@ nts.live уже має Media Session, service worker і `display:standalone`, т
 - `LSUIElement = YES` в Info.plist, інакше апка з'явиться в доці.
 - `.menuBarExtraStyle(.window)` — не `.menu`, бо далі потрібна власна панель.
 
-## Головний неперевірений ризик — це і є Фаза 0
+## Головний ризик — знято 2026-09-01
 
-**Чи їсть AVPlayer нескінченний Icecast без `Content-Length`?**
-Він розрахований на файли й HLS. Зазвичай працює, але буває вередливим.
-Якщо ні — вся архітектура інша, тому перевіряємо це першим.
+**Чи їсть AVPlayer нескінченний Icecast без `Content-Length`?** Так.
 
-План Б: власний завантажувач на `URLSession.dataTask` + ручний розбір ICY +
-подача в `AVAudioEngine`. Помітно більше роботи.
+Дві станції по 40 хв через `Probe`, обидві **PASS**: нуль `AVPlayerItemPlaybackStalled`,
+нуль виходів зі стану `playing`, нуль записів у журналі помилок. SomaFM Drone Zone
+перекачала 71.7 МБ рівним потоком 257 kbps.
+
+План Б (власний завантажувач на `URLSession.dataTask` + ручний розбір ICY + подача
+в `AVAudioEngine`) **не потрібен**.
+
+⚠️ Побічне: NTS усі 40 хв показував у `accessLog` нулі — `numberOfBytesTransferred`
+і `observedBitrate` по нулях, хоча потік ішов без єдиної перерви. **Лічильники
+`accessLog` не можна брати за ознаку живого потоку** — сторож у `Resilience`
+тримається на `timeControlStatus`, не на байтах.
 
 ## Каталог
 
