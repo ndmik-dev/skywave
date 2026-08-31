@@ -121,9 +121,13 @@ public final class StreamPlayer {
     }
 }
 
-/// AVPlayer surfaces ICY `StreamTitle` through the item's timed metadata; this
-/// just forwards the string values.
+/// AVPlayer surfaces ICY `StreamTitle` through the item's timed metadata.
+///
+/// Stations also emit `icy/json`, which on NTS is a literal empty `{}`, so items
+/// are matched by identifier rather than taken as they come.
 private final class MetadataDelegate: NSObject, AVPlayerItemMetadataOutputPushDelegate {
+    private static let streamTitle = AVMetadataIdentifier("icy/StreamTitle")
+
     private let onTitle: @Sendable (String) -> Void
 
     init(onTitle: @escaping @Sendable (String) -> Void) {
@@ -137,7 +141,10 @@ private final class MetadataDelegate: NSObject, AVPlayerItemMetadataOutputPushDe
     ) {
         for group in groups {
             for item in group.items {
-                guard let value = item.value(forKey: "stringValue") as? String,
+                let isTitle = item.identifier == Self.streamTitle
+                    || item.commonKey == .commonKeyTitle
+                guard isTitle,
+                      let value = item.value(forKey: "stringValue") as? String,
                       !value.isEmpty else { continue }
                 onTitle(value)
             }

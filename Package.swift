@@ -16,5 +16,12 @@ let package = Package(
             dependencies: ["SkywaveKit"],
             path: "Sources/Probe"
         ),
+        // XCTest and swift-testing both ship with Xcode, which this setup does
+        // not have, so the checks are a plain executable instead.
+        .executableTarget(
+            name: "Checks",
+            dependencies: ["SkywaveKit"],
+            path: "Sources/Checks"
+        ),
     ]
 )
