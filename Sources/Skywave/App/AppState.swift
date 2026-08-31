@@ -141,8 +141,11 @@ final class AppState {
             isLoading = state == .waitingToPlay
             publish()
         case .metadata(let title):
+            // Airtime stations also push an ICY title, but it carries the show
+            // name, which would overwrite the real track their API reports. So
+            // ICY only speaks for stations that have no adapter to poll.
+            guard let current, !current.adapter.isPolled else { return }
             let parsed = IcyAdapter.parse(streamTitle: title)
-            // Polled adapters own the show name; ICY only ever contributes a track.
             guard !parsed.isEmpty else { return }
             nowPlaying.track = parsed.track
             publish()
