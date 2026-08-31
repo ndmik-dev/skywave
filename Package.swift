@@ -10,6 +10,11 @@ let package = Package(
             path: "Sources/SkywaveKit",
             resources: [.process("Resources")]
         ),
+        .executableTarget(
+            name: "Skywave",
+            dependencies: ["SkywaveKit"],
+            path: "Sources/Skywave"
+        ),
         // Phase 0 harness: endurance-tests AVPlayer against endless Icecast.
         .executableTarget(
             name: "Probe",
