@@ -54,6 +54,7 @@ private struct OnAir: View {
     }
 
     private func subtitle(for station: Station) -> String {
+        if state.reconnecting != nil { return "Reconnecting…" }
         if state.isLoading { return "Connecting…" }
         if state.nowPlaying.isOffAir { return "Off air" }
         let lines = [state.nowPlaying.show, state.nowPlaying.track].compactMap { $0 }

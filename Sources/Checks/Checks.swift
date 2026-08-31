@@ -14,6 +14,7 @@ struct Checks {
             cleanupChecks()
             icyChecks()
         }
+        await resilienceChecks()
         if live { await liveAdapterChecks() }
         exit(await MainActor.run { Expect.report() })
     }

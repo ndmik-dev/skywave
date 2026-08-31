@@ -16,10 +16,13 @@ final class AppState {
 
     /// Set when enabling "start at login" was refused.
     private(set) var loginItemError: String?
+    /// Why the stream is being re-established, if it is.
+    private(set) var reconnecting: ReconnectReason?
 
     @ObservationIgnored private let player = StreamPlayer()
     @ObservationIgnored private let nowPlayingCenter = NowPlayingCenter()
     @ObservationIgnored private let hotkeys = Hotkeys()
+    @ObservationIgnored private let resilience = Resilience()
     @ObservationIgnored private var lastStation: Station?
     @ObservationIgnored private var pollTask: Task<Void, Never>?
     @ObservationIgnored private var eventTask: Task<Void, Never>?
@@ -41,6 +44,9 @@ final class AppState {
         nowPlayingCenter.onPlay = { [weak self] in self?.resumeOrStart() }
         nowPlayingCenter.onPause = { [weak self] in self?.stop() }
         hotkeys.register { [weak self] in self?.togglePlayback() }
+
+        resilience.onReconnect = { [weak self] reason in self?.reconnect(reason) }
+        resilience.start()
     }
 
     // MARK: - Login item
@@ -87,13 +93,27 @@ final class AppState {
         current = station
         lastStation = station
         nowPlaying = NowPlaying()
+        reconnecting = nil
         isLoading = true
+        resilience.noteStarted()
         player.play(url: station.stream, gain: station.gain)
         startPolling(station)
         publish()
     }
 
+    /// Re-establishes the current stream, keeping the station selected so the
+    /// panel does not flicker back to "nothing on air".
+    private func reconnect(_ reason: ReconnectReason) {
+        guard let station = current else { return }
+        reconnecting = reason
+        isLoading = true
+        resilience.noteStarted()
+        player.play(url: station.stream, gain: station.gain)
+        publish()
+    }
+
     func stop() {
+        resilience.noteStopped()
         pollTask?.cancel()
         pollTask = nil
         player.stop()
@@ -101,6 +121,7 @@ final class AppState {
         nowPlaying = NowPlaying()
         isPlaying = false
         isLoading = false
+        reconnecting = nil
         publish()
     }
 
@@ -139,6 +160,12 @@ final class AppState {
         case .timeControl(let state):
             isPlaying = state == .playing
             isLoading = state == .waitingToPlay
+            if state == .playing {
+                resilience.notePlaying()
+                reconnecting = nil
+            } else {
+                resilience.notePaused()
+            }
             publish()
         case .metadata(let title):
             // Airtime stations also push an ICY title, but it carries the show
@@ -152,8 +179,11 @@ final class AppState {
         case .failedToPlayToEnd:
             isPlaying = false
             isLoading = false
+            resilience.noteFailed()
             publish()
-        case .stalled, .errorLog, .itemStatus:
+        case .stalled:
+            resilience.noteStalled()
+        case .errorLog, .itemStatus:
             break
         }
     }
