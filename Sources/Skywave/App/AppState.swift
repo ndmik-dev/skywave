@@ -16,14 +16,15 @@ final class AppState {
     /// so resuming re-establishes the stream at whatever is on now.
     private(set) var isPaused = false
     /// Set when the catalog itself will not load — the app has nothing to show.
-    private(set) var fatalError: String?
+    private(set) var loadError: String?
 
     /// Set when enabling "start at login" was refused.
     private(set) var loginItemError: String?
     /// Why the stream is being re-established, if it is.
     private(set) var reconnecting: ReconnectReason?
     private(set) var moments: [Moment] = []
-    /// Briefly set after a moment is kept, so the panel can say so.
+    /// Set briefly after a moment is kept, so the panel can confirm it. Saving
+    /// is otherwise completely silent, which from a global hotkey is unnerving.
     private(set) var justSaved: Moment?
     private(set) var momentError: String?
     /// Observable, unlike the recorder itself: the panel has to redraw when a
@@ -52,7 +53,7 @@ final class AppState {
         do {
             catalog = try Catalog.bundled()
         } catch {
-            fatalError = "Could not load stations.json: \(error)"
+            loadError = "Could not load stations.json: \(error)"
         }
         eventTask = Task { [player] in
             for await event in player.events { self.handle(event) }
@@ -176,24 +177,37 @@ final class AppState {
         reconnecting = nil
         isPaused = false
         isLoading = true
+        momentError = nil
+        justSaved = nil
         resilience.noteStarted()
         player.play(url: station.stream, gain: station.gain)
-        // A second connection, because the player's own audio is unreachable on
-        // most stations.
-        // HLS is served in segments, so there is nothing to keep.
-        if station.adapter != .hls {
-            recorder.start(url: station.stream)
-            canSaveMoment = true
-        }
+        startCapture(for: station)
         startPolling(station)
         publish()
+    }
+
+    /// A second connection, because the player's own audio is unreachable on
+    /// most stations. HLS is served in segments, so there is nothing to keep.
+    private func startCapture(for station: Station) {
+        guard station.adapter != .hls else {
+            canSaveMoment = false
+            return
+        }
+        recorder.start(url: station.stream)
+        canSaveMoment = true
     }
 
     // MARK: - Moments
 
     func saveMoment() {
-        guard let station = current, let held = recorder.snapshot() else {
-            momentError = "Nothing captured yet"
+        guard let station = current else {
+            momentError = "Nothing is playing"
+            return
+        }
+        guard let held = recorder.snapshot() else {
+            momentError = station.adapter == .hls
+                ? "\(station.name) cannot be captured"
+                : "Nothing captured yet"
             return
         }
         Task {
@@ -207,6 +221,9 @@ final class AppState {
                 justSaved = moment
                 momentError = nil
                 await refreshMoments()
+                // Long enough to notice, short enough not to become furniture.
+                try? await Task.sleep(for: .seconds(4))
+                if justSaved?.id == moment.id { justSaved = nil }
             } catch {
                 momentError = error.localizedDescription
             }
@@ -237,26 +254,7 @@ final class AppState {
         isLoading = true
         resilience.noteStarted()
         player.play(url: station.stream, gain: station.gain)
-        if station.adapter != .hls {
-            recorder.start(url: station.stream)
-            canSaveMoment = true
-        }
-        publish()
-    }
-
-    func stop() {
-        resilience.noteStopped()
-        recorder.stop()
-        canSaveMoment = false
-        pollTask?.cancel()
-        pollTask = nil
-        player.stop()
-        current = nil
-        nowPlaying = NowPlaying()
-        isPlaying = false
-        isLoading = false
-        isPaused = false
-        reconnecting = nil
+        startCapture(for: station)
         publish()
     }
 

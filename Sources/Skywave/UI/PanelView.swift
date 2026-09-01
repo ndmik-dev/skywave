@@ -14,7 +14,7 @@ struct PanelView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            if let message = state.fatalError {
+            if let message = state.loadError {
                 Text(message)
                     .font(.callout)
                     .foregroundStyle(.secondary)
@@ -27,7 +27,11 @@ struct PanelView: View {
                 Divider()
                 switch mode {
                 case .stations: StationList(state: state)
-                case .moments: MomentsList(state: state)
+                case .moments:
+                    // Moments saved in earlier sessions live on disk; without
+                    // this the list only ever showed what this run had kept.
+                    MomentsList(state: state)
+                        .task { await state.refreshMoments() }
                 }
                 Divider()
                 Footer(state: state, mode: mode)
@@ -168,6 +172,15 @@ private struct Footer: View {
     let mode: PanelMode
     @State private var startsAtLogin = false
 
+    /// Saving from a global hotkey is invisible otherwise — the panel may not
+    /// even be open when it happens.
+    private var keepTitle: String {
+        guard let saved = state.justSaved else { return "Keep this moment" }
+        return saved.duration > 0
+            ? "Kept \(Int(saved.duration.rounded()))s"
+            : "Kept"
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if let message = state.momentError {
@@ -181,8 +194,12 @@ private struct Footer: View {
             // is not about — it would only ever be a dead row there.
             if mode == .stations {
                 Button(action: state.saveMoment) {
-                    FooterRow(icon: "bookmark", title: "Keep this moment",
-                              key: "⌥⌘M", enabled: state.canSaveMoment)
+                    FooterRow(
+                        icon: state.justSaved == nil ? "bookmark" : "checkmark",
+                        title: keepTitle,
+                        key: state.justSaved == nil ? "⌥⌘M" : "",
+                        enabled: state.canSaveMoment
+                    )
                 }
                 .buttonStyle(.plain)
                 .disabled(!state.canSaveMoment)

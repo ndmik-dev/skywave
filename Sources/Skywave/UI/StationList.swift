@@ -19,32 +19,39 @@ struct StationList: View {
     @State private var lastKeyPress = Date.distantPast
     @FocusState private var searchFocused: Bool
 
-
     private static let rowHeight: CGFloat = 30
     private static let maxHeight: CGFloat = 380
 
-    /// City is not shown any more, but it is still worth searching by.
+    /// Matches everything a row can show, plus the city, which is searchable
+    /// even though it is no longer displayed.
     private var matches: [Station] {
         let trimmed = query.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return [] }
-        return state.stations.filter {
-            $0.name.localizedCaseInsensitiveContains(trimmed)
-                || $0.city.localizedCaseInsensitiveContains(trimmed)
-                || (state.onAir[$0.id]?.show?.localizedCaseInsensitiveContains(trimmed) ?? false)
+        return state.stations.filter { station in
+            let playing = state.onAir[station.id]
+            return [station.name, station.city, playing?.show, playing?.track]
+                .compactMap { $0 }
+                .contains { $0.localizedCaseInsensitiveContains(trimmed) }
         }
     }
 
     private var isSearching: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
 
+    private var favourites: [Station] { state.stations.filter(\.favorite) }
+    private var others: [Station] { state.stations.filter { !$0.favorite } }
+
     /// The list in the order it is drawn, which is what the arrow keys walk.
+    /// Built from the same two groups the body renders, so the two cannot drift.
     private var visible: [Station] {
-        isSearching
-            ? matches
-            : state.stations.filter(\.favorite) + state.stations.filter { !$0.favorite }
+        isSearching ? matches : favourites + others
     }
 
     private var height: CGFloat {
-        min(CGFloat(max(visible.count, 1)) * Self.rowHeight + 17, Self.maxHeight)
+        // Group titles and the divider between them are chrome the rows do not
+        // account for; without them a short catalog clips its last row.
+        let chrome: CGFloat = isSearching ? 0 : 53
+        let rows = CGFloat(max(visible.count, 1)) * Self.rowHeight
+        return min(rows + chrome + 17, Self.maxHeight)
     }
 
     var body: some View {
@@ -103,12 +110,11 @@ struct StationList: View {
                         rowGroup(visible)
                     } else {
                         GroupTitle("Favourites")
-                        rowGroup(state.stations.filter(\.favorite))
-                        let rest = state.stations.filter { !$0.favorite }
-                        if !rest.isEmpty {
+                        rowGroup(favourites)
+                        if !others.isEmpty {
                             Divider().padding(.horizontal, 10).padding(.vertical, 4)
                             GroupTitle("All stations")
-                            rowGroup(rest)
+                            rowGroup(others)
                         }
                     }
                 }
@@ -193,7 +199,6 @@ struct StationList: View {
         hovered = nil
         return true
     }
-
 }
 
 private struct StationRow: View {
@@ -214,9 +219,11 @@ private struct StationRow: View {
         return playing.show ?? playing.track
     }
 
+    /// Red keeps meaning "playing", dimmed while paused so it does not claim
+    /// sound that is not there.
     private var background: Color {
-        if isCurrent { return Theme.signal }
-        return isSelected ? .primary.opacity(0.09) : .clear
+        guard isCurrent else { return isSelected ? .primary.opacity(0.09) : .clear }
+        return state.isPaused ? Theme.signal.opacity(0.45) : Theme.signal
     }
 
     var body: some View {
@@ -243,6 +250,14 @@ private struct StationRow: View {
             .frame(minHeight: 30)
             .contentShape(.rect)
             .background(background, in: .rect(cornerRadius: 6))
+            // The cursor used to disappear when it reached the playing station,
+            // because red simply won. An outline says both things at once.
+            .overlay {
+                if isSelected, isCurrent {
+                    RoundedRectangle(cornerRadius: 6)
+                        .strokeBorder(.white.opacity(0.7), lineWidth: 1.5)
+                }
+            }
         }
         .buttonStyle(.plain)
         .onHover(perform: onHover)

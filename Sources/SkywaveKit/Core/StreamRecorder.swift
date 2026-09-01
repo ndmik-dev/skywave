@@ -20,6 +20,10 @@ public final class StreamRecorder: NSObject, @unchecked Sendable {
     private var contentType = ""
     private var session: URLSession?
     private var task: URLSessionDataTask?
+    /// The URL to hold, while it is wanted. Nil once stopped, which is how a
+    /// finished request tells a deliberate stop from a dropped connection.
+    private var wanted: URL?
+    private var retry: Task<Void, Never>?
 
     public init(seconds: TimeInterval = 60) {
         self.seconds = seconds
@@ -27,19 +31,16 @@ public final class StreamRecorder: NSObject, @unchecked Sendable {
     }
 
     public var isRunning: Bool {
-        lock.withLock { task != nil }
-    }
-
-    /// Seconds of history held so far, up to `seconds`.
-    public var held: TimeInterval {
-        lock.withLock {
-            guard let oldest = chunks.first?.at else { return 0 }
-            return min(ContinuousClock.now - oldest, .seconds(seconds)).seconds
-        }
+        lock.withLock { wanted != nil }
     }
 
     public func start(url: URL) {
         stop()
+        lock.withLock { wanted = url }
+        connect(to: url)
+    }
+
+    private func connect(to url: URL) {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.timeoutIntervalForRequest = 20
         configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
@@ -51,22 +52,38 @@ public final class StreamRecorder: NSObject, @unchecked Sendable {
         lock.withLock {
             self.session = session
             self.task = task
-            chunks.removeAll()
         }
         task.resume()
     }
 
     public func stop() {
+        retry?.cancel()
+        retry = nil
         let (task, session) = lock.withLock {
             defer {
                 self.task = nil
                 self.session = nil
+                self.wanted = nil
                 chunks.removeAll()
             }
             return (self.task, self.session)
         }
         task?.cancel()
         session?.invalidateAndCancel()
+    }
+
+    /// The capture connection is separate from the player's, so it can die on
+    /// its own while playback carries on — and then a moment would quietly hold
+    /// nothing but stale audio. Reconnects until told to stop.
+    private func reconnect() {
+        guard let url = lock.withLock({ wanted }) else { return }
+        retry?.cancel()
+        retry = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(3))
+            guard !Task.isCancelled, let self,
+                  self.lock.withLock({ self.wanted }) == url else { return }
+            self.connect(to: url)
+        }
     }
 
     /// The held audio, oldest byte first, with the extension its codec calls for.
@@ -158,6 +175,17 @@ extension StreamRecorder: URLSessionDataDelegate {
             chunks.append((ContinuousClock.now, data))
             trimLocked()
         }
+    }
+
+    public func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        didCompleteWithError error: (any Error)?
+    ) {
+        // An endless stream only ends by failing, so any completion while the
+        // recorder is still wanted means the connection dropped. Held audio is
+        // kept: a gap is better than losing the last minute entirely.
+        reconnect()
     }
 }
 

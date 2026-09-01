@@ -15,6 +15,7 @@ struct Checks {
             icyChecks()
         }
         await resilienceChecks()
+        await momentChecks()
         if live { await liveAdapterChecks() }
         exit(await MainActor.run { Expect.report() })
     }
