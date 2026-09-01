@@ -50,6 +50,24 @@ public final class StreamPlayer {
         player.play()
     }
 
+    /// Ramps the output down. Used by the sleep timer: cutting a stream off dead
+    /// wakes people as surely as the sound did.
+    public func fadeOut(over duration: Duration, steps: Int = 40) async {
+        let start = player.volume
+        guard start > 0, steps > 0 else { return }
+        let step = duration / steps
+        for index in 1...steps {
+            try? await Task.sleep(for: step)
+            guard !Task.isCancelled else { return }
+            player.volume = start * Float(steps - index) / Float(steps)
+        }
+    }
+
+    /// Restores the level after a fade that was called off.
+    public func setVolume(_ volume: Float) {
+        player.volume = volume
+    }
+
     public func stop() {
         notificationTasks.forEach { $0.cancel() }
         notificationTasks.removeAll()

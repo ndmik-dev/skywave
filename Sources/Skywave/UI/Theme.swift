@@ -45,6 +45,7 @@ struct Artwork: View {
         }
         .frame(width: size, height: size)
         .clipShape(.rect(cornerRadius: size * 0.17, style: .continuous))
+        .accessibilityHidden(true)
     }
 
     private var initial: String {
@@ -72,16 +73,21 @@ struct Artwork: View {
 /// there would be an invention.
 struct StatusDot: View {
     let playing: NowPlaying?
+    var unreachable = false
 
     var body: some View {
         Group {
-            if let playing {
+            if unreachable {
+                Circle().fill(Theme.offAir)
+            } else if let playing {
                 Circle().fill(color(playing))
             } else {
                 Circle().strokeBorder(.tertiary, lineWidth: 1)
             }
         }
         .frame(width: 6, height: 6)
+        // Decoration: the row's own label already says the state in words.
+        .accessibilityHidden(true)
     }
 
     private func color(_ playing: NowPlaying) -> Color {

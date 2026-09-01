@@ -115,6 +115,7 @@ private struct OnAir: View {
                     }
                     .buttonStyle(.plain)
                     .help(state.isPaused ? "Resume" : "Pause")
+                    .accessibilityLabel(state.isPaused ? "Resume" : "Pause")
                 }
             }
 
@@ -129,6 +130,7 @@ private struct OnAir: View {
     /// Second line: the show if the station reports one, otherwise where it is.
     private var showLine: String {
         guard let station = state.current else { return "Pick a station" }
+        if state.isUnreachable(station) { return "not responding" }
         if state.isPaused { return "paused" }
         if state.isLoading { return "connecting…" }
         if state.nowPlaying.isOffAir { return "off air" }
@@ -139,6 +141,11 @@ private struct OnAir: View {
     /// line above already carries when there is no show.
     private var trackLine: String {
         guard let station = state.current else { return "⌥⌘P" }
+        // A dead station is the one case where the useful thing to show is when
+        // it was last alive, so a rotting catalog is visible rather than guessed.
+        if state.isUnreachable(station) {
+            return Silence.text(since: state.lastHeard(station))
+        }
         if let track = state.nowPlaying.track { return track }
         guard state.isPlaying else { return "" }
         return state.nowPlaying.show == nil ? "on air" : "on air · \(station.city)"

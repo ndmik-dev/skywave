@@ -25,6 +25,9 @@ public final class Resilience {
     /// Called with the reason and how many attempts have failed in a row since
     /// playback was last confirmed.
     public var onReconnect: ((ReconnectReason, Int) -> Void)?
+    /// Called once when retrying is abandoned. Without this the panel says
+    /// "reconnecting" forever, which is indistinguishable from a slow station.
+    public var onGaveUp: (() -> Void)?
 
     /// Injectable so the checks can exercise the same logic in milliseconds.
     public struct Policy: Sendable {
@@ -34,15 +37,21 @@ public final class Resilience {
         /// before the watchdog treats it as stuck.
         public var watchdogGrace: Duration
         public var watchdogPoll: Duration
+        /// Consecutive failures before giving up. With the default backoff that
+        /// is about a minute and a half of trying, which separates a station
+        /// having a bad moment from one that is gone.
+        public var maxAttempts: Int
 
         public init(
             backoff: [Duration] = [.seconds(2), .seconds(5), .seconds(10), .seconds(20), .seconds(30)],
             watchdogGrace: Duration = .seconds(25),
-            watchdogPoll: Duration = .seconds(5)
+            watchdogPoll: Duration = .seconds(5),
+            maxAttempts: Int = 6
         ) {
             self.backoff = backoff
             self.watchdogGrace = watchdogGrace
             self.watchdogPoll = watchdogPoll
+            self.maxAttempts = maxAttempts
         }
     }
 
@@ -150,6 +159,14 @@ public final class Resilience {
 
     private func reconnect(_ reason: ReconnectReason) {
         guard isWanted, pendingReconnect == nil else { return }
+        guard attempt < policy.maxAttempts else {
+            // Stop asking. The caller decides what to tell the user; hammering a
+            // dead host forever helps nobody.
+            isWanted = false
+            notPlayingSince = nil
+            onGaveUp?()
+            return
+        }
         let delay = policy.backoff[min(attempt, policy.backoff.count - 1)]
         attempt += 1
         isPlaying = false

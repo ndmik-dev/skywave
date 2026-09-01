@@ -32,6 +32,12 @@ final class AppState {
     /// station starts, or the button stays frozen in its old state.
     private(set) var canSaveMoment = false
 
+    /// Stations that were given up on this session. Cleared the moment one is
+    /// heard again, so a station coming back needs no restart.
+    private(set) var unreachable: Set<String> = []
+    /// Bumped when the last-heard record changes, so rows redraw.
+    private(set) var reachabilityRevision = 0
+
     /// When playback will stop by itself, if a sleep timer is running.
     private(set) var sleepUntil: Date?
     /// The moment being previewed, if any.
@@ -51,6 +57,7 @@ final class AppState {
     /// itself lives in user defaults, which observation cannot see.
     private(set) var favouritesRevision = 0
     @ObservationIgnored private var favourites = Favourites()
+    @ObservationIgnored private var reachability = Reachability()
     @ObservationIgnored private var lastStation: Station?
     @ObservationIgnored private var pollTask: Task<Void, Never>?
     @ObservationIgnored private var boardTask: Task<Void, Never>?
@@ -83,6 +90,7 @@ final class AppState {
         resilience.onReconnect = { [weak self] reason, attempt in
             self?.reconnect(reason, attempt: attempt)
         }
+        resilience.onGaveUp = { [weak self] in self?.giveUp() }
         resilience.start()
         notifications.requestAuthorization()
     }
@@ -137,6 +145,29 @@ final class AppState {
 
     var stations: [Station] { catalog?.stations ?? [] }
 
+    func isUnreachable(_ station: Station) -> Bool {
+        unreachable.contains(station.id)
+    }
+
+    /// When the station was last actually heard, for the panel to say so.
+    func lastHeard(_ station: Station) -> Date? {
+        _ = reachabilityRevision
+        return reachability.lastHeard(station)
+    }
+
+    /// Retrying was abandoned. The station stays selected and stays named — it
+    /// is the list's record of what has gone quiet.
+    private func giveUp() {
+        guard let station = current else { return }
+        unreachable.insert(station.id)
+        reconnecting = nil
+        isLoading = false
+        isPlaying = false
+        recorder.stop()
+        canSaveMoment = false
+        publish()
+    }
+
     func isFavourite(_ station: Station) -> Bool {
         _ = favouritesRevision
         return favourites.contains(station)
@@ -170,6 +201,8 @@ final class AppState {
     /// Drops the connection but keeps the station, so the panel still shows what
     /// it is tuned to and one press picks it back up.
     func pause() {
+        // Any running fade belongs to a timer that is now moot.
+        if sleepUntil != nil { setSleepTimer(minutes: nil) }
         resilience.noteStopped()
         recorder.stop()
         canSaveMoment = false
@@ -194,6 +227,7 @@ final class AppState {
 
     func play(_ station: Station) {
         stopMoment()
+        unreachable.remove(station.id)
         current = station
         lastStation = station
         notifications.reset(station: station)
@@ -226,6 +260,9 @@ final class AppState {
     /// The offered lengths, in minutes. Clicking the footer row walks the list
     /// and then switches off, which keeps the whole feature to one row.
     static let sleepOptions = [15, 30, 60, 90]
+    /// Long enough to be a fade rather than a cut, short enough not to eat a
+    /// noticeable slice of the timer.
+    private static let sleepFade = Duration.seconds(10)
 
     /// Minutes on the current timer, or nil when none is set.
     var sleepMinutes: Int? {
@@ -252,16 +289,22 @@ final class AppState {
         sleepTask = nil
         guard let minutes else {
             sleepUntil = nil
+            // A fade may have already started; put the level back.
+            if let current { player.setVolume(current.gain) }
             return
         }
         sleepSetAt = Date()
         let deadline = sleepSetAt.addingTimeInterval(Double(minutes * 60))
         sleepUntil = deadline
         sleepTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(Double(minutes * 60)))
+            let total = Duration.seconds(Double(minutes * 60))
+            try? await Task.sleep(for: total - Self.sleepFade)
             guard !Task.isCancelled, let self else { return }
+            await self.player.fadeOut(over: Self.sleepFade)
+            guard !Task.isCancelled else { return }
             self.sleepUntil = nil
             self.pause()
+            // pause() released the item; the next play() sets the gain again.
         }
     }
 
@@ -401,7 +444,12 @@ final class AppState {
             if state == .playing {
                 resilience.notePlaying()
                 reconnecting = nil
-                if let current { notifications.recovered(station: current) }
+                if let current {
+                    notifications.recovered(station: current)
+                    unreachable.remove(current.id)
+                    reachability.noteHeard(current)
+                    reachabilityRevision += 1
+                }
             } else {
                 resilience.notePaused()
             }

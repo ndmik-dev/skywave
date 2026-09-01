@@ -57,3 +57,35 @@ func countdownChecks() {
                      "0:00", "never goes negative")
     }
 }
+
+
+/// Reachability is what makes a rotting catalog visible, so its wording and its
+/// persistence are both worth pinning down.
+@MainActor
+func reachabilityChecks() {
+    Expect.suite("reachability") {
+        let now = Date(timeIntervalSinceReferenceDate: 1_000_000)
+        Expect.equal(Silence.text(since: nil, now: now), "never heard", "never played")
+        Expect.equal(Silence.text(since: now.addingTimeInterval(-60), now: now),
+                     "heard just now", "minutes ago")
+        Expect.equal(Silence.text(since: now.addingTimeInterval(-7200), now: now),
+                     "heard 2h ago", "hours ago")
+        Expect.equal(Silence.text(since: now.addingTimeInterval(-86_400 * 3), now: now),
+                     "heard 3d ago", "days ago")
+        // Past a fortnight the exact count stops meaning anything.
+        Expect.that(Silence.text(since: now.addingTimeInterval(-86_400 * 400), now: now)
+                        .hasPrefix("last heard"), "a year ago names the month")
+
+        let suite = "skywave.checks.reachability"
+        let defaults = UserDefaults(suiteName: suite)!
+        defaults.removePersistentDomain(forName: suite)
+        let station = try Catalog.bundled().stations[0]
+
+        var reachability = Reachability(defaults: defaults)
+        Expect.that(reachability.lastHeard(station) == nil, "unknown before anything is heard")
+        reachability.noteHeard(station, at: now)
+        Expect.that(Reachability(defaults: defaults).lastHeard(station) != nil,
+                    "last heard survives a reload")
+        defaults.removePersistentDomain(forName: suite)
+    }
+}

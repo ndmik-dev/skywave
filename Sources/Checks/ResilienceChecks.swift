@@ -8,7 +8,8 @@ func resilienceChecks() async {
     let fast = Resilience.Policy(
         backoff: [.milliseconds(40), .milliseconds(120)],
         watchdogGrace: .milliseconds(100),
-        watchdogPoll: .milliseconds(20)
+        watchdogPoll: .milliseconds(20),
+        maxAttempts: 3
     )
 
     await check("reconnects after a stall") { resilience, reasons in
@@ -53,6 +54,16 @@ func resilienceChecks() async {
         // Back to the 40ms delay rather than escalating to 120ms.
         try? await Task.sleep(for: .milliseconds(80))
         return reasons.value.count == 2
+    }
+
+    await check("gives up rather than retrying a dead station forever") { resilience, reasons in
+        resilience.noteStarted()
+        for _ in 0..<8 {
+            resilience.noteFailed()
+            try? await Task.sleep(for: .milliseconds(60))
+        }
+        // Two delays in the policy, three attempts allowed by the check below.
+        return reasons.value.count <= 3
     }
 
     await check("the watchdog fires when playback never starts") { resilience, reasons in

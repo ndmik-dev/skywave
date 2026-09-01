@@ -15,6 +15,7 @@ struct Checks {
             icyChecks()
             favouriteChecks()
             countdownChecks()
+            reachabilityChecks()
         }
         await resilienceChecks()
         await momentChecks()

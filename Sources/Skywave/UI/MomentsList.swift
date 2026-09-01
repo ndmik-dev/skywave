@@ -91,6 +91,7 @@ private struct MomentRow: View {
                     .buttonStyle(.borderless)
                     .foregroundStyle(.secondary)
                     .help("Show in Finder")
+                    .accessibilityLabel("Show in Finder")
                     Button {
                         state.delete(moment)
                     } label: {
@@ -100,6 +101,7 @@ private struct MomentRow: View {
                     .buttonStyle(.borderless)
                     .foregroundStyle(.secondary)
                     .help("Delete")
+                    .accessibilityLabel("Delete moment")
                 }
             }
             .padding(.horizontal, 6)
@@ -108,6 +110,7 @@ private struct MomentRow: View {
             .background(isHovered ? Color.primary.opacity(0.07) : .clear, in: .rect(cornerRadius: 7))
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(isPlaying ? "Stop" : "Play") \(moment.title ?? moment.stationName)")
         .onHover { isHovered = $0 }
     }
 
@@ -135,6 +138,7 @@ private struct Waveform: View {
         }
         .frame(width: 70, height: 30)
         .opacity(active ? 1 : 0.9)
+        .accessibilityHidden(true)
     }
 
     private var bars: [CGFloat] {

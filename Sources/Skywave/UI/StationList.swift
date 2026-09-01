@@ -214,6 +214,9 @@ private struct StationRow: View {
     /// What the station's API says is on. Twelve stations have no API, and get
     /// no line rather than an invented one.
     private var show: String? {
+        // A station that has been given up on says so instead — that is the one
+        // thing worth knowing about it.
+        if state.isUnreachable(station) { return "not responding" }
         guard let playing = state.onAir[station.id] else { return nil }
         if playing.isOffAir { return "off air" }
         return playing.show ?? playing.track
@@ -226,12 +229,23 @@ private struct StationRow: View {
         return state.isPaused ? Theme.signal.opacity(0.45) : Theme.signal
     }
 
+    private var accessibilityDescription: String {
+        var parts = [station.name]
+        if let show { parts.append(show) }
+        if isCurrent { parts.append(state.isPaused ? "paused" : "playing") }
+        if state.isFavourite(station) { parts.append("favourite") }
+        return parts.joined(separator: ", ")
+    }
+
     var body: some View {
         Button {
             state.toggle(station)
         } label: {
             HStack(spacing: 9) {
-                StatusDot(playing: state.onAir[station.id])
+                StatusDot(
+                    playing: state.onAir[station.id],
+                    unreachable: state.isUnreachable(station)
+                )
                 Text(station.name)
                     .font(.system(size: 13, weight: isCurrent ? .semibold : .medium))
                     .fixedSize()
@@ -260,6 +274,9 @@ private struct StationRow: View {
             }
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityDescription)
+        .accessibilityAddTraits(isCurrent ? [.isSelected] : [])
         .onHover(perform: onHover)
         .contextMenu {
             Button(state.isFavourite(station) ? "Remove from favourites" : "Add to favourites") {
