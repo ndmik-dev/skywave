@@ -10,6 +10,13 @@ struct StationList: View {
     /// Nil until the arrow keys are used: a highlight nobody asked for reads as
     /// a claim about the station, and the panel already has one of those.
     @State private var selection: Int?
+    /// The row under the pointer. Mutually exclusive with `selection` — whichever
+    /// input was used last owns the highlight, so there is never more than one.
+    @State private var hovered: String?
+    /// Arrow keys scroll the list, which drags rows under a pointer that never
+    /// moved. Hover is ignored briefly afterwards so that does not steal the
+    /// highlight back.
+    @State private var lastKeyPress = Date.distantPast
     @FocusState private var searchFocused: Bool
 
 
@@ -66,6 +73,8 @@ struct StationList: View {
                 // While searching, the top match is the obvious target for
                 // Enter, so the cursor is worth showing unasked.
                 .onChange(of: query) { _, text in
+                    hovered = nil
+                    lastKeyPress = Date()
                     selection = text.trimmingCharacters(in: .whitespaces).isEmpty ? nil : 0
                 }
         }
@@ -123,11 +132,18 @@ struct StationList: View {
             StationRow(
                 station: station,
                 state: state,
-                isSelected: selection.map { visible.indices.contains($0)
-                    && visible[$0].id == station.id } ?? false
+                isSelected: isHighlighted(station),
+                onHover: { entered in hover(station.id, entered: entered) }
             )
             .id(station.id)
         }
+    }
+
+    func isHighlighted(_ station: Station) -> Bool {
+        if let index = selection, visible.indices.contains(index) {
+            return visible[index].id == station.id
+        }
+        return hovered == station.id
     }
 
     /// The first press lands on the end the key points at: Down on the first
@@ -135,20 +151,38 @@ struct StationList: View {
     /// as the arrows skipping half the list.
     func move(_ delta: Int) {
         guard !visible.isEmpty else { return }
-        guard let current = selection else {
+        lastKeyPress = Date()
+        // The pointer gives up the highlight the moment a key is pressed.
+        let start = selection ?? hovered.flatMap { id in visible.firstIndex { $0.id == id } }
+        hovered = nil
+        guard let start else {
             selection = delta > 0 ? 0 : visible.count - 1
             return
         }
         // Clamped, not wrapped: wrapping from the last row back to the first is
         // indistinguishable from the cursor vanishing.
-        selection = min(max(current + delta, 0), visible.count - 1)
+        selection = min(max(start + delta, 0), visible.count - 1)
     }
 
+    func hover(_ id: String, entered: Bool) {
+        // Rows sliding under a still pointer are not the user reaching for them.
+        guard Date().timeIntervalSince(lastKeyPress) > 0.3 else { return }
+        if entered {
+            hovered = id
+            selection = nil
+        } else if hovered == id {
+            hovered = nil
+        }
+    }
+
+    /// Plays whatever is highlighted, by either input.
     func playSelected() {
-        guard let index = selection, visible.indices.contains(index) else { return }
-        state.toggle(visible[index])
-        // Clicking or playing must not strand the keyboard: focus goes back to
-        // the field so the next arrow press still works.
+        let station = selection.flatMap { visible.indices.contains($0) ? visible[$0] : nil }
+            ?? hovered.flatMap { id in visible.first { $0.id == id } }
+        guard let station else { return }
+        state.toggle(station)
+        // Playing must not strand the keyboard: focus goes back to the field so
+        // the next arrow press still works.
         searchFocused = true
     }
 
@@ -156,6 +190,7 @@ struct StationList: View {
         guard isSearching else { return false }
         query = ""
         selection = nil
+        hovered = nil
         return true
     }
 
@@ -164,10 +199,10 @@ struct StationList: View {
 private struct StationRow: View {
     let station: Station
     @Bindable var state: AppState
-    /// The row the arrow keys are on, which Enter would play. The mouse never
-    /// moves it, so the panel shows at most two marks and they never mean the
-    /// same thing: solid red is what is playing, grey is where the keys are.
+    /// Highlighted by whichever input was used last. Solid red still means "this
+    /// is playing"; grey means "this is what Enter would play".
     let isSelected: Bool
+    let onHover: (Bool) -> Void
 
     private var isCurrent: Bool { state.isCurrent(station) }
 
@@ -210,6 +245,7 @@ private struct StationRow: View {
             .background(background, in: .rect(cornerRadius: 6))
         }
         .buttonStyle(.plain)
+        .onHover(perform: onHover)
     }
 }
 

@@ -166,7 +166,7 @@ private struct StateNote: View {
 private struct Footer: View {
     @Bindable var state: AppState
     let mode: PanelMode
-    @State private var showingSettings = false
+    @State private var startsAtLogin = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -187,44 +187,33 @@ private struct Footer: View {
                 .buttonStyle(.plain)
                 .disabled(!state.canSaveMoment)
             }
-            // A popover, not a Menu: `menuStyle(.borderlessButton)` adds its own
-            // insets, which pushed this row's icon and text out of line with the
-            // one above. A plain Button gives both rows identical geometry.
             Button {
-                showingSettings = true
+                startsAtLogin.toggle()
             } label: {
-                FooterRow(icon: "gearshape", title: "Settings…", key: "", enabled: true)
+                FooterRow(
+                    icon: startsAtLogin ? "checkmark.square.fill" : "square",
+                    title: "Start at login",
+                    key: "",
+                    enabled: true
+                )
             }
             .buttonStyle(.plain)
-            .popover(isPresented: $showingSettings, arrowEdge: .bottom) {
-                SettingsPopover(state: state)
-            }
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
-    }
-}
-
-private struct SettingsPopover: View {
-    @Bindable var state: AppState
-    @State private var startsAtLogin = false
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Toggle("Start at login", isOn: $startsAtLogin)
             if let message = state.loginItemError {
                 Text(message)
                     .font(.system(size: 11))
                     .foregroundStyle(Theme.signal)
+                    .padding(.horizontal, 6)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            Divider()
-            Button("Quit Skywave") { NSApplication.shared.terminate(nil) }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
+            Button {
+                NSApplication.shared.terminate(nil)
+            } label: {
+                FooterRow(icon: "power", title: "Quit Skywave", key: "", enabled: true)
+            }
+            .buttonStyle(.plain)
         }
-        .padding(14)
-        .frame(width: 200, alignment: .leading)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
         // Read once on appear, since the system owns the real value.
         .onAppear { startsAtLogin = state.startsAtLogin }
         .onChange(of: startsAtLogin) { _, enabled in
@@ -291,6 +280,9 @@ private struct ModeSwitch: View {
                                     .shadow(color: .black.opacity(0.25), radius: 1, y: 1)
                             }
                         }
+                        // Without this the hit area is the text itself, and the
+                        // rest of the pill does nothing when clicked.
+                        .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
             }
