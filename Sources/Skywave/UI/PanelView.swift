@@ -11,6 +11,10 @@ enum PanelMode: String, CaseIterable, Identifiable {
 struct PanelView: View {
     @Bindable var state: AppState
     @State private var mode: PanelMode = .stations
+    /// The moments list has nothing focusable in it, so without somewhere for
+    /// focus to live the panel received no key events at all there — which is
+    /// why ⌘2 worked and ⌘1 did not.
+    @FocusState private var panelFocused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -38,6 +42,14 @@ struct PanelView: View {
             }
         }
         .frame(width: Theme.width)
+        .focusable()
+        .focusEffectDisabled()
+        .focused($panelFocused)
+        .onChange(of: mode) { _, new in
+            // In stations mode the search field wants focus; take it only when
+            // nothing else will.
+            if new == .moments { panelFocused = true }
+        }
         .onKeyPress(phases: .down) { press in
             guard press.modifiers.contains(.command) else { return .ignored }
             switch press.characters {
@@ -342,7 +354,6 @@ private struct SleepRow: View {
 
     private func title(at now: Date) -> String {
         guard let until = state.sleepUntil else { return "Sleep timer" }
-        let left = max(0, Int(until.timeIntervalSince(now).rounded()))
-        return String(format: "Sleeps in %d:%02d", left / 60, left % 60)
+        return "Sleeps in " + Countdown.text(until: until, now: now)
     }
 }

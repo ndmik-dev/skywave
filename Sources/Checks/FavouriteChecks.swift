@@ -34,3 +34,26 @@ func favouriteChecks() {
         defaults.removePersistentDomain(forName: suite)
     }
 }
+
+
+/// The countdown shipped an off-by-one that was only visible by watching it.
+@MainActor
+func countdownChecks() {
+    Expect.suite("countdown") {
+        let start = Date(timeIntervalSinceReferenceDate: 0)
+        let until = start.addingTimeInterval(900)
+        // Full value the instant it is set.
+        Expect.equal(Countdown.text(until: until, now: start), "15:00", "at once")
+        // Never shows more time than is left.
+        Expect.equal(Countdown.text(until: until, now: start.addingTimeInterval(0.4)),
+                     "15:00", "part way into the first second")
+        Expect.equal(Countdown.text(until: until, now: start.addingTimeInterval(1)),
+                     "14:59", "after one second")
+        Expect.equal(Countdown.text(until: until, now: start.addingTimeInterval(899.5)),
+                     "0:01", "the last visible second")
+        Expect.equal(Countdown.text(until: until, now: start.addingTimeInterval(900)),
+                     "0:00", "exactly at the deadline")
+        Expect.equal(Countdown.text(until: until, now: start.addingTimeInterval(950)),
+                     "0:00", "never goes negative")
+    }
+}
