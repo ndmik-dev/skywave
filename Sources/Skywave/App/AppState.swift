@@ -12,6 +12,9 @@ final class AppState {
     private(set) var nowPlaying = NowPlaying()
     private(set) var isPlaying = false
     private(set) var isLoading = false
+    /// Paused keeps the station selected; live radio has nothing to resume into,
+    /// so resuming re-establishes the stream at whatever is on now.
+    private(set) var isPaused = false
     /// Set when the catalog itself will not load — the app has nothing to show.
     private(set) var fatalError: String?
 
@@ -57,7 +60,7 @@ final class AppState {
 
         nowPlayingCenter.start()
         nowPlayingCenter.onPlay = { [weak self] in self?.resumeOrStart() }
-        nowPlayingCenter.onPause = { [weak self] in self?.stop() }
+        nowPlayingCenter.onPause = { [weak self] in self?.pause() }
         hotkeys.register(
             playPause: { [weak self] in self?.togglePlayback() },
             keepMoment: { [weak self] in self?.saveMoment() }
@@ -122,29 +125,44 @@ final class AppState {
 
     func isCurrent(_ station: Station) -> Bool { current?.id == station.id }
 
-    /// Media keys and the global hotkey: stop what is playing, or bring back the
-    /// last station.
+    /// Media keys and the global hotkey.
     func togglePlayback() {
-        if current == nil {
-            resumeOrStart()
-        } else {
-            stop()
-        }
-    }
-
-    private func resumeOrStart() {
-        guard current == nil else { return }
-        // Falls back to the first favourite, so the hotkey does something useful
-        // on a cold start.
-        if let station = lastStation ?? catalog?.favorites.first {
+        if let current, !isPaused {
+            pause()
+        } else if let station = current ?? lastStation ?? catalog?.favorites.first {
+            // Falls back to the first favourite, so the hotkey does something
+            // useful on a cold start.
             play(station)
         }
     }
 
-    /// Click on a row: stop if it is already the current station, otherwise switch.
+    private func resumeOrStart() {
+        guard !isPlaying else { return }
+        if let station = current ?? lastStation ?? catalog?.favorites.first {
+            play(station)
+        }
+    }
+
+    /// Drops the connection but keeps the station, so the panel still shows what
+    /// it is tuned to and one press picks it back up.
+    func pause() {
+        resilience.noteStopped()
+        recorder.stop()
+        canSaveMoment = false
+        pollTask?.cancel()
+        pollTask = nil
+        player.stop()
+        isPlaying = false
+        isLoading = false
+        isPaused = true
+        reconnecting = nil
+        publish()
+    }
+
+    /// Click on a row: pause if it is already the current station, otherwise switch.
     func toggle(_ station: Station) {
-        if isCurrent(station) {
-            stop()
+        if isCurrent(station), !isPaused {
+            pause()
         } else {
             play(station)
         }
@@ -156,6 +174,7 @@ final class AppState {
         notifications.reset(station: station)
         nowPlaying = NowPlaying()
         reconnecting = nil
+        isPaused = false
         isLoading = true
         resilience.noteStarted()
         player.play(url: station.stream, gain: station.gain)
@@ -236,6 +255,7 @@ final class AppState {
         nowPlaying = NowPlaying()
         isPlaying = false
         isLoading = false
+        isPaused = false
         reconnecting = nil
         publish()
     }

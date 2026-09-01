@@ -52,21 +52,27 @@ struct Artwork: View {
     }
 }
 
-/// The small coloured dot that says whether a station is on air.
+/// Whether a station is on air.
 ///
-/// Absent when the station has no API to ask — inventing a green dot for the
-/// twelve that report nothing would be a lie.
+/// Filled means the station's API answered: green on air, amber answering but
+/// with no title, grey off air. An outline means there is no API to ask — the
+/// twelve ICY and HLS stations say nothing about themselves, and a filled dot
+/// there would be an invention.
 struct StatusDot: View {
     let playing: NowPlaying?
 
     var body: some View {
-        Circle()
-            .fill(color)
-            .frame(width: 6, height: 6)
+        Group {
+            if let playing {
+                Circle().fill(color(playing))
+            } else {
+                Circle().strokeBorder(.tertiary, lineWidth: 1)
+            }
+        }
+        .frame(width: 6, height: 6)
     }
 
-    private var color: Color {
-        guard let playing else { return .secondary.opacity(0.25) }
+    private func color(_ playing: NowPlaying) -> Color {
         if playing.isOffAir { return Theme.offAir }
         return playing.isEmpty ? Theme.idle : Theme.onAir
     }

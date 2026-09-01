@@ -7,7 +7,9 @@ struct StationList: View {
     @Bindable var state: AppState
 
     @State private var query = ""
-    @State private var selection = 0
+    /// Nil until the arrow keys are used: a highlight nobody asked for reads as
+    /// a claim about the station, and the panel already has one of those.
+    @State private var selection: Int?
     @FocusState private var searchFocused: Bool
 
     private static let rowHeight: CGFloat = 30
@@ -62,7 +64,11 @@ struct StationList: View {
                     query = ""
                     return .handled
                 }
-                .onChange(of: query) { _, _ in selection = 0 }
+                // While searching, the top match is the obvious target for
+                // Enter, so the cursor is worth showing unasked.
+                .onChange(of: query) { _, text in
+                    selection = text.trimmingCharacters(in: .whitespaces).isEmpty ? nil : 0
+                }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 7)
@@ -99,7 +105,7 @@ struct StationList: View {
             // its window to the ideal — without this the list collapses.
             .frame(height: height)
             .onChange(of: selection) { _, index in
-                guard visible.indices.contains(index) else { return }
+                guard let index, visible.indices.contains(index) else { return }
                 withAnimation(.easeOut(duration: 0.1)) {
                     scroller.scrollTo(visible[index].id, anchor: .center)
                 }
@@ -112,21 +118,29 @@ struct StationList: View {
             StationRow(
                 station: station,
                 state: state,
-                isSelected: visible.indices.contains(selection)
-                    && visible[selection].id == station.id
+                isSelected: selection.map { visible.indices.contains($0)
+                    && visible[$0].id == station.id } ?? false
             )
             .id(station.id)
         }
     }
 
+    /// The first press puts the cursor on the station that is playing, if any,
+    /// rather than jumping to the top of the list.
     private func move(_ delta: Int) {
         guard !visible.isEmpty else { return }
-        selection = (selection + delta + visible.count) % visible.count
+        guard let current = selection else {
+            selection = state.current.flatMap { station in
+                visible.firstIndex { $0.id == station.id }
+            } ?? 0
+            return
+        }
+        selection = (current + delta + visible.count) % visible.count
     }
 
     private func playSelected() {
-        guard visible.indices.contains(selection) else { return }
-        state.toggle(visible[selection])
+        guard let index = selection, visible.indices.contains(index) else { return }
+        state.toggle(visible[index])
     }
 }
 

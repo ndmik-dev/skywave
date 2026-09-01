@@ -67,28 +67,30 @@ private struct OnAir: View {
                         .font(.system(size: 12.5))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
-                    HStack(spacing: 5) {
-                        if state.isPlaying {
-                            PulsingDot()
+                    if !trackLine.isEmpty {
+                        HStack(spacing: 5) {
+                            if state.isPlaying {
+                                PulsingDot()
+                            }
+                            Text(trackLine)
+                                .font(.system(size: 11.5))
+                                .foregroundStyle(.tertiary)
+                                .lineLimit(1)
                         }
-                        Text(trackLine)
-                            .font(.system(size: 11.5))
-                            .foregroundStyle(.tertiary)
-                            .lineLimit(1)
                     }
                 }
                 Spacer(minLength: 0)
 
                 if state.current != nil {
-                    Button(action: state.stop) {
-                        Image(systemName: "stop.fill")
-                            .font(.system(size: 11))
+                    Button(action: state.togglePlayback) {
+                        Image(systemName: state.isPaused ? "play.fill" : "pause.fill")
+                            .font(.system(size: 12))
                             .foregroundStyle(.white)
                             .frame(width: 34, height: 34)
                             .background(Theme.signal, in: .circle)
                     }
                     .buttonStyle(.plain)
-                    .help("Stop")
+                    .help(state.isPaused ? "Resume" : "Pause")
                 }
             }
 
@@ -100,19 +102,22 @@ private struct OnAir: View {
         .padding(.bottom, 12)
     }
 
+    /// Second line: the show if the station reports one, otherwise where it is.
     private var showLine: String {
         guard let station = state.current else { return "Pick a station" }
+        if state.isPaused { return "paused" }
         if state.isLoading { return "connecting…" }
-        return state.nowPlaying.isOffAir
-            ? "off air"
-            : state.nowPlaying.show ?? station.city
+        if state.nowPlaying.isOffAir { return "off air" }
+        return state.nowPlaying.show ?? station.city
     }
 
-    /// The track when the station reports one, otherwise just that it is on.
+    /// Third line: the track if there is one. Never repeats the city, which the
+    /// line above already carries when there is no show.
     private var trackLine: String {
         guard let station = state.current else { return "⌥⌘P" }
         if let track = state.nowPlaying.track { return track }
-        return state.isPlaying ? "on air · \(station.city)" : station.city
+        guard state.isPlaying else { return "" }
+        return state.nowPlaying.show == nil ? "on air" : "on air · \(station.city)"
     }
 }
 
