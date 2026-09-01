@@ -29,7 +29,9 @@ struct StationList: View {
         guard !trimmed.isEmpty else { return [] }
         return state.stations.filter { station in
             let playing = state.onAir[station.id]
-            return [station.name, station.city, playing?.show, playing?.track]
+            // The id too: it carries the network for stations whose display
+            // name does not, so "soma" still finds both SomaFM channels.
+            return [station.name, station.id, station.city, playing?.show, playing?.track]
                 .compactMap { $0 }
                 .contains { $0.localizedCaseInsensitiveContains(trimmed) }
         }
