@@ -10,9 +10,7 @@ struct StationList: View {
     @State private var selection = 0
     @FocusState private var searchFocused: Bool
 
-    /// Rows carry a second line only for the eight polled stations, so the height
-    /// is measured from the tallest.
-    private static let rowHeight: CGFloat = 34
+    private static let rowHeight: CGFloat = 30
     private static let maxHeight: CGFloat = 380
 
     /// City is not shown any more, but it is still worth searching by.
@@ -52,7 +50,7 @@ struct StationList: View {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.tertiary)
                 .font(.callout)
-            TextField("Search", text: $query)
+            TextField("Пошук", text: $query)
                 .textFieldStyle(.plain)
                 .focused($searchFocused)
                 .onKeyPress(.upArrow) { move(-1); return .handled }
@@ -66,7 +64,7 @@ struct StationList: View {
                 }
                 .onChange(of: query) { _, _ in selection = 0 }
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 14)
         .padding(.vertical, 7)
         .onAppear { searchFocused = true }
     }
@@ -76,23 +74,26 @@ struct StationList: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
                     if visible.isEmpty {
-                        Text("Nothing matches")
-                            .font(.callout)
+                        Text("Нічого не знайшлося")
+                            .font(.system(size: 12.5))
                             .foregroundStyle(.secondary)
-                            .padding(.horizontal, 12)
+                            .padding(.horizontal, 14)
                             .padding(.vertical, 8)
                     } else if isSearching {
                         rowGroup(visible)
                     } else {
+                        GroupTitle("Улюблені")
                         rowGroup(state.stations.filter(\.favorite))
                         let rest = state.stations.filter { !$0.favorite }
                         if !rest.isEmpty {
-                            Divider().padding(.vertical, 4)
+                            Divider().padding(.horizontal, 10).padding(.vertical, 4)
+                            GroupTitle("Усі станції")
                             rowGroup(rest)
                         }
                     }
                 }
-                .padding(.vertical, 4)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
             }
             // A ScrollView reports an ideal height of zero, and MenuBarExtra sizes
             // its window to the ideal — without this the list collapses.
@@ -139,11 +140,11 @@ private struct StationRow: View {
 
     private var isCurrent: Bool { state.isCurrent(station) }
 
-    /// What is on air, when the station's API says. The twelve ICY and HLS
-    /// stations reveal nothing until they are playing.
-    private var subtitle: String? {
+    /// What the station's API says is on. Twelve stations have no API, and get
+    /// no line rather than an invented one.
+    private var show: String? {
         guard let playing = state.onAir[station.id] else { return nil }
-        if playing.isOffAir { return "Off air" }
+        if playing.isOffAir { return "не в ефірі" }
         return playing.show ?? playing.track
     }
 
@@ -151,42 +152,47 @@ private struct StationRow: View {
         Button {
             state.toggle(station)
         } label: {
-            HStack(spacing: 8) {
-                indicator
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(station.name)
-                        .fontWeight(isCurrent ? .semibold : .regular)
-                    if let subtitle {
-                        Text(subtitle)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                    }
+            HStack(spacing: 9) {
+                StatusDot(playing: state.onAir[station.id])
+                Text(station.name)
+                    .font(.system(size: 13, weight: isCurrent ? .semibold : .medium))
+                    .fixedSize()
+                Spacer(minLength: 8)
+                if let show {
+                    Text(show)
+                        .font(.system(size: 12))
+                        .foregroundStyle(isSelected ? AnyShapeStyle(.white.opacity(0.8)) : AnyShapeStyle(.tertiary))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
                 }
-                Spacer(minLength: 0)
+                if isCurrent {
+                    Image(systemName: "speaker.wave.2.fill")
+                        .font(.system(size: 10))
+                        .foregroundStyle(isSelected ? AnyShapeStyle(.white) : AnyShapeStyle(Theme.signal))
+                }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 5)
+            .foregroundStyle(isSelected ? AnyShapeStyle(.white) : AnyShapeStyle(.primary))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 6)
+            .frame(minHeight: 30)
             .contentShape(.rect)
-            .background(background, in: .rect(cornerRadius: 5))
+            .background(isSelected ? Theme.signal : .clear, in: .rect(cornerRadius: 6))
         }
         .buttonStyle(.plain)
     }
+}
 
-    /// Marks the station that is on air, and nothing else. The frame is reserved
-    /// either way so names do not shift when playback starts.
-    private var indicator: some View {
-        Group {
-            if isCurrent {
-                Image(systemName: "speaker.wave.2.fill")
-                    .foregroundStyle(.tint)
-            }
-        }
-        .frame(width: 14)
-    }
+private struct GroupTitle: View {
+    let text: String
 
-    private var background: Color {
-        isSelected ? .primary.opacity(0.12) : .clear
+    init(_ text: String) { self.text = text }
+
+    var body: some View {
+        Text(text)
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(.tertiary)
+            .padding(.horizontal, 6)
+            .padding(.top, 2)
+            .padding(.bottom, 5)
     }
 }

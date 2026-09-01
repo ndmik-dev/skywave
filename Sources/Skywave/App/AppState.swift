@@ -33,6 +33,7 @@ final class AppState {
     @ObservationIgnored private let hotkeys = Hotkeys()
     @ObservationIgnored private let resilience = Resilience()
     @ObservationIgnored private let recorder = StreamRecorder()
+    @ObservationIgnored private let notifications = Notifications()
     @ObservationIgnored private var lastStation: Station?
     @ObservationIgnored private var pollTask: Task<Void, Never>?
     @ObservationIgnored private var boardTask: Task<Void, Never>?
@@ -54,10 +55,16 @@ final class AppState {
         nowPlayingCenter.start()
         nowPlayingCenter.onPlay = { [weak self] in self?.resumeOrStart() }
         nowPlayingCenter.onPause = { [weak self] in self?.stop() }
-        hotkeys.register { [weak self] in self?.togglePlayback() }
+        hotkeys.register(
+            playPause: { [weak self] in self?.togglePlayback() },
+            keepMoment: { [weak self] in self?.saveMoment() }
+        )
 
-        resilience.onReconnect = { [weak self] reason in self?.reconnect(reason) }
+        resilience.onReconnect = { [weak self] reason, attempt in
+            self?.reconnect(reason, attempt: attempt)
+        }
         resilience.start()
+        notifications.requestAuthorization()
     }
 
     // MARK: - On air across the catalog
@@ -143,6 +150,7 @@ final class AppState {
     func play(_ station: Station) {
         current = station
         lastStation = station
+        notifications.reset(station: station)
         nowPlaying = NowPlaying()
         reconnecting = nil
         isLoading = true
@@ -199,8 +207,11 @@ final class AppState {
 
     /// Re-establishes the current stream, keeping the station selected so the
     /// panel does not flicker back to "nothing on air".
-    private func reconnect(_ reason: ReconnectReason) {
+    /// - Parameter attempt: consecutive failures since playback last worked.
+    ///   Past a few, the silence needs explaining.
+    private func reconnect(_ reason: ReconnectReason, attempt: Int) {
         guard let station = current else { return }
+        if attempt >= 3 { notifications.unreachable(station: station) }
         reconnecting = reason
         isLoading = true
         resilience.noteStarted()
@@ -249,6 +260,9 @@ final class AppState {
         guard isCurrent(station) else { return }
         nowPlaying = playing
         onAir[station.id] = playing
+        if let show = playing.show {
+            notifications.showChanged(station: station, to: show)
+        }
         publish()
     }
 
@@ -264,6 +278,7 @@ final class AppState {
             if state == .playing {
                 resilience.notePlaying()
                 reconnecting = nil
+                if let current { notifications.recovered(station: current) }
             } else {
                 resilience.notePaused()
             }

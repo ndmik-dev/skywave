@@ -75,7 +75,7 @@ func resilienceChecks() async {
     ) async {
         let resilience = Resilience(policy: fast)
         let reasons = Recorder()
-        resilience.onReconnect = { reasons.value.append($0) }
+        resilience.onReconnect = { reason, _ in reasons.value.append(reason) }
         resilience.start()
         let passed = await body(resilience, reasons)
         resilience.stop()

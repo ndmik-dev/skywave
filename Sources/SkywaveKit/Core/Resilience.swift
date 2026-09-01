@@ -22,7 +22,9 @@ public enum ReconnectReason: String, Sendable {
 /// It holds no player of its own — it only observes and signals.
 @MainActor
 public final class Resilience {
-    public var onReconnect: ((ReconnectReason) -> Void)?
+    /// Called with the reason and how many attempts have failed in a row since
+    /// playback was last confirmed.
+    public var onReconnect: ((ReconnectReason, Int) -> Void)?
 
     /// Injectable so the checks can exercise the same logic in milliseconds.
     public struct Policy: Sendable {
@@ -157,7 +159,7 @@ public final class Resilience {
             try? await Task.sleep(for: delay)
             guard !Task.isCancelled, let self, self.isWanted else { return }
             self.pendingReconnect = nil
-            self.onReconnect?(reason)
+            self.onReconnect?(reason, self.attempt)
         }
     }
 }
