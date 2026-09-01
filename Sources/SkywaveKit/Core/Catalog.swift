@@ -31,3 +31,15 @@ public struct Catalog: Codable, Sendable {
 public enum CatalogError: Error {
     case missingResource
 }
+
+public extension Station {
+    /// Location of this station's mark inside the bundle, if it has one.
+    var logoURL: URL? {
+        guard let logo else { return nil }
+        return Bundle.module.url(
+            forResource: (logo as NSString).deletingPathExtension,
+            withExtension: (logo as NSString).pathExtension,
+            subdirectory: "Logos"
+        )
+    }
+}

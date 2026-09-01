@@ -32,4 +32,7 @@ public struct Station: Codable, Sendable, Hashable, Identifiable {
     public let gain: Float
     public let measuredLufs: Double
     public let favorite: Bool
+    /// Filename inside the bundle's `Logos` folder. Absent for stations whose
+    /// site offers no usable mark — those fall back to a lettered tile.
+    public let logo: String?
 }

@@ -42,6 +42,13 @@ func catalogChecks() {
             Expect.that(station.gain > 0 && station.gain <= 1.0, "\(station.id) gain \(station.gain)")
         }
         Expect.equal(Set(catalog.stations.map(\.id)).count, catalog.stations.count, "unique ids")
+
+        // Eighteen stations ship a mark; the other two fall back to a letter.
+        let withLogos = catalog.stations.filter { $0.logo != nil }
+        Expect.equal(withLogos.count, 18, "stations with a logo")
+        for station in withLogos {
+            Expect.that(station.logoURL != nil, "\(station.id): logo file missing from the bundle")
+        }
     }
 }
 

@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import SkywaveKit
 
@@ -12,27 +13,38 @@ enum Theme {
     static let width: CGFloat = 344
 }
 
-/// A station's tile: a gradient with its initial, coloured from its id so the
-/// same station always looks the same.
+/// A station's tile: its own mark where one exists, otherwise a gradient with
+/// its initial, coloured from its id so the same station always looks the same.
+///
+/// Eighteen of the twenty ship a logo. SWU FM has no site of its own — swu.fm
+/// redirects onto Rinse, and using Rinse's mark would name the wrong station —
+/// and Radio Alhara's site carries no icon at all.
 struct Artwork: View {
     let station: Station
     var size: CGFloat = 46
 
     var body: some View {
-        RoundedRectangle(cornerRadius: size * 0.17, style: .continuous)
-            .fill(
+        Group {
+            if let logo = station.logoURL, let image = NSImage(contentsOf: logo) {
+                Image(nsImage: image)
+                    .resizable()
+                    .interpolation(.high)
+                    .aspectRatio(contentMode: .fill)
+            } else {
                 LinearGradient(
                     colors: [shade(0.52), shade(0.34)],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
-            )
-            .frame(width: size, height: size)
-            .overlay(
-                Text(initial)
-                    .font(.system(size: size * 0.37, weight: .bold))
-                    .foregroundStyle(.white)
-            )
+                .overlay(
+                    Text(initial)
+                        .font(.system(size: size * 0.37, weight: .bold))
+                        .foregroundStyle(.white)
+                )
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(.rect(cornerRadius: size * 0.17, style: .continuous))
     }
 
     private var initial: String {

@@ -8,7 +8,12 @@ let package = Package(
         .target(
             name: "SkywaveKit",
             path: "Sources/SkywaveKit",
-            resources: [.process("Resources")]
+            resources: [
+                .process("Resources/stations.json"),
+                // copy, not process: process flattens the folder and the logos
+                // would lose the subdirectory they are looked up by.
+                .copy("Resources/Logos"),
+            ]
         ),
         .executableTarget(
             name: "Skywave",

@@ -71,7 +71,13 @@ struct StationList: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 7)
-        .onAppear { searchFocused = true }
+        // Not `onAppear`: the panel's window is not key yet at that point, so
+        // the focus request is dropped and the arrow keys stay dead until
+        // something is clicked. A beat later the window will take it.
+        .task {
+            try? await Task.sleep(for: .milliseconds(120))
+            searchFocused = true
+        }
     }
 
     private var rows: some View {

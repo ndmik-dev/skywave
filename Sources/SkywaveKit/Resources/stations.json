@@ -12,7 +12,8 @@
       "gain": 0.562,
       "measuredLufs": -11.0,
       "favorite": true,
-      "adapterId": "1"
+      "adapterId": "1",
+      "logo": "nts-1.png"
     },
     {
       "id": "dublab",
@@ -23,7 +24,8 @@
       "gain": 0.977,
       "measuredLufs": -15.8,
       "favorite": true,
-      "adapterId": "dublab"
+      "adapterId": "dublab",
+      "logo": "dublab.png"
     },
     {
       "id": "the-lot-radio",
@@ -34,7 +36,8 @@
       "gain": 1.0,
       "measuredLufs": -22.5,
       "favorite": true,
-      "hls": true
+      "hls": true,
+      "logo": "the-lot-radio.png"
     },
     {
       "id": "cashmere-radio",
@@ -45,7 +48,8 @@
       "gain": 0.457,
       "measuredLufs": -9.2,
       "favorite": true,
-      "adapterId": "cashmereradio"
+      "adapterId": "cashmereradio",
+      "logo": "cashmere-radio.png"
     },
     {
       "id": "rinse-fm",
@@ -55,7 +59,8 @@
       "adapter": "icy",
       "gain": 0.335,
       "measuredLufs": -6.5,
-      "favorite": true
+      "favorite": true,
+      "logo": "rinse-fm.png"
     },
     {
       "id": "somafm-drone-zone",
@@ -65,7 +70,8 @@
       "adapter": "icy",
       "gain": 0.955,
       "measuredLufs": -15.6,
-      "favorite": true
+      "favorite": true,
+      "logo": "somafm-drone-zone.png"
     },
     {
       "id": "kool-fm",
@@ -75,7 +81,8 @@
       "adapter": "icy",
       "gain": 0.403,
       "measuredLufs": -8.1,
-      "favorite": false
+      "favorite": false,
+      "logo": "kool-fm.png"
     },
     {
       "id": "swu-fm",
@@ -96,7 +103,8 @@
       "gain": 0.668,
       "measuredLufs": -12.5,
       "favorite": false,
-      "adapterId": "kioskradiobxl"
+      "adapterId": "kioskradiobxl",
+      "logo": "kiosk-radio.png"
     },
     {
       "id": "intergalactic-fm",
@@ -106,7 +114,8 @@
       "adapter": "icy",
       "gain": 1.0,
       "measuredLufs": -21.2,
-      "favorite": false
+      "favorite": false,
+      "logo": "intergalactic-fm.png"
     },
     {
       "id": "mutant-radio",
@@ -116,7 +125,8 @@
       "adapter": "icy",
       "gain": 1.0,
       "measuredLufs": -20.4,
-      "favorite": false
+      "favorite": false,
+      "logo": "mutant-radio.png"
     },
     {
       "id": "operator-radio",
@@ -126,7 +136,8 @@
       "adapter": "icy",
       "gain": 0.832,
       "measuredLufs": -14.4,
-      "favorite": false
+      "favorite": false,
+      "logo": "operator-radio.png"
     },
     {
       "id": "radio-alhara",
@@ -146,7 +157,8 @@
       "adapter": "icy",
       "gain": 1.0,
       "measuredLufs": -20.3,
-      "favorite": false
+      "favorite": false,
+      "logo": "wfmu.png"
     },
     {
       "id": "worldwide-fm",
@@ -157,7 +169,8 @@
       "gain": 0.724,
       "measuredLufs": -13.2,
       "favorite": false,
-      "adapterId": "worldwide-fm"
+      "adapterId": "worldwide-fm",
+      "logo": "worldwide-fm.png"
     },
     {
       "id": "somafm-groove-salad",
@@ -167,7 +180,8 @@
       "adapter": "icy",
       "gain": 0.871,
       "measuredLufs": -14.8,
-      "favorite": false
+      "favorite": false,
+      "logo": "somafm-groove-salad.png"
     },
     {
       "id": "refuge-worldwide",
@@ -178,7 +192,8 @@
       "gain": 0.525,
       "measuredLufs": -10.4,
       "favorite": false,
-      "adapterId": "s3699c5e49"
+      "adapterId": "s3699c5e49",
+      "logo": "refuge-worldwide.png"
     },
     {
       "id": "bytefm",
@@ -188,7 +203,8 @@
       "adapter": "icy",
       "gain": 1.0,
       "measuredLufs": -17.7,
-      "favorite": false
+      "favorite": false,
+      "logo": "bytefm.png"
     },
     {
       "id": "the-face-radio",
@@ -199,7 +215,8 @@
       "gain": 0.299,
       "measuredLufs": -5.5,
       "favorite": false,
-      "adapterId": "the-face-radio"
+      "adapterId": "the-face-radio",
+      "logo": "the-face-radio.png"
     },
     {
       "id": "noods-radio",
@@ -210,7 +227,8 @@
       "gain": 1.0,
       "measuredLufs": -16.5,
       "favorite": false,
-      "adapterId": "noods-radio"
+      "adapterId": "noods-radio",
+      "logo": "noods-radio.png"
     }
   ]
 }
