@@ -29,6 +29,10 @@ nts.live уже має Media Session, service worker і `display:standalone`, т
 
 - `MTAudioProcessingTap` **не працює з HLS** — підтверджене обмеження Apple, не баг.
   Для ShazamKit потрібна друга конекція до потоку, а не тап плеєра.
+  ⚠️ Виміряно 2026-09-01 на всіх 20 станціях: тап віддає звук лише на **5** —
+  обидві SomaFM і три Radiocult. На решті ані `AVAsset`, ані `AVPlayerItem`
+  не показують жодної аудіодоріжки, тож чіпляти тап нема до чого. Отже друга
+  конекція потрібна не лише для ShazamKit, а й для «Моментів».
 - AVPlayer віддає ICY `StreamTitle` сам через `AVPlayerItem.timedMetadata` —
   окремий парсер писати не треба.
 - `AVAudioSession` — **iOS-only**, на macOS не потрібен і не налаштовується.

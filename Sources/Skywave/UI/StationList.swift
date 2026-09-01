@@ -152,9 +152,7 @@ private struct StationRow: View {
             state.toggle(station)
         } label: {
             HStack(spacing: 8) {
-                Image(systemName: isCurrent ? "speaker.wave.2.fill" : "circle.dotted")
-                    .foregroundStyle(isCurrent ? AnyShapeStyle(.tint) : AnyShapeStyle(.tertiary))
-                    .frame(width: 16)
+                indicator
                 VStack(alignment: .leading, spacing: 1) {
                     Text(station.name)
                         .fontWeight(isCurrent ? .semibold : .regular)
@@ -175,6 +173,22 @@ private struct StationRow: View {
         }
         .buttonStyle(.plain)
         .onHover { isHovered = $0 }
+    }
+
+    /// Empty unless the row means something: playing, or about to be. The frame
+    /// is reserved either way so names do not shift when playback starts.
+    private var indicator: some View {
+        Group {
+            if isCurrent {
+                Image(systemName: "speaker.wave.2.fill")
+                    .foregroundStyle(.tint)
+            } else if isHovered || isSelected {
+                Image(systemName: "play.fill")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(width: 14)
     }
 
     private var background: Color {
