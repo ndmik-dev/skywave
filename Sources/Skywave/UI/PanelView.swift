@@ -166,7 +166,7 @@ private struct StateNote: View {
 private struct Footer: View {
     @Bindable var state: AppState
     let mode: PanelMode
-    @State private var startsAtLogin = false
+    @State private var showingSettings = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -180,29 +180,52 @@ private struct Footer: View {
             // Keeping a moment acts on what is playing, which the moments list
             // is not about — it would only ever be a dead row there.
             if mode == .stations {
-                FooterRow(
-                    icon: "bookmark",
-                    title: "Keep this moment",
-                    key: "⌥⌘M",
-                    enabled: state.canSaveMoment,
-                    action: state.saveMoment
-                )
-            }
-            Menu {
-                Toggle("Start at login", isOn: $startsAtLogin)
-                if let message = state.loginItemError {
-                    Text(message)
+                Button(action: state.saveMoment) {
+                    FooterRow(icon: "bookmark", title: "Keep this moment",
+                              key: "⌥⌘M", enabled: state.canSaveMoment)
                 }
-                Divider()
-                Button("Quit Skywave") { NSApplication.shared.terminate(nil) }
-            } label: {
-                FooterRow(icon: "gearshape", title: "Settings…", key: "", enabled: true, action: nil)
+                .buttonStyle(.plain)
+                .disabled(!state.canSaveMoment)
             }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
+            // A popover, not a Menu: `menuStyle(.borderlessButton)` adds its own
+            // insets, which pushed this row's icon and text out of line with the
+            // one above. A plain Button gives both rows identical geometry.
+            Button {
+                showingSettings = true
+            } label: {
+                FooterRow(icon: "gearshape", title: "Settings…", key: "", enabled: true)
+            }
+            .buttonStyle(.plain)
+            .popover(isPresented: $showingSettings, arrowEdge: .bottom) {
+                SettingsPopover(state: state)
+            }
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
+    }
+}
+
+private struct SettingsPopover: View {
+    @Bindable var state: AppState
+    @State private var startsAtLogin = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Toggle("Start at login", isOn: $startsAtLogin)
+            if let message = state.loginItemError {
+                Text(message)
+                    .font(.system(size: 11))
+                    .foregroundStyle(Theme.signal)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Divider()
+            Button("Quit Skywave") { NSApplication.shared.terminate(nil) }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+        }
+        .padding(14)
+        .frame(width: 200, alignment: .leading)
+        // Read once on appear, since the system owns the real value.
         .onAppear { startsAtLogin = state.startsAtLogin }
         .onChange(of: startsAtLogin) { _, enabled in
             state.setStartsAtLogin(enabled)
@@ -211,19 +234,21 @@ private struct Footer: View {
     }
 }
 
+/// Both footer rows share this exactly, so their icons and text line up by
+/// construction rather than by tuning.
 private struct FooterRow: View {
     let icon: String
     let title: String
     let key: String
     let enabled: Bool
-    let action: (() -> Void)?
 
     @State private var isHovered = false
 
     var body: some View {
-        let row = HStack(spacing: 9) {
+        HStack(spacing: 9) {
             Image(systemName: icon)
-                .frame(width: 14)
+                .font(.system(size: 12))
+                .frame(width: 16, alignment: .center)
             Text(title)
             Spacer(minLength: 8)
             Text(key)
@@ -234,20 +259,12 @@ private struct FooterRow: View {
         .foregroundStyle(enabled ? AnyShapeStyle(.primary.opacity(0.75)) : AnyShapeStyle(.tertiary))
         .padding(.horizontal, 6)
         .padding(.vertical, 5)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(.rect)
         .background(isHovered && enabled ? Color.primary.opacity(0.07) : .clear, in: .rect(cornerRadius: 6))
         .onHover { isHovered = $0 }
-
-        if let action {
-            Button(action: action) { row }
-                .buttonStyle(.plain)
-                .disabled(!enabled)
-        } else {
-            row
-        }
     }
 }
-
 
 /// The mockup's switch: a neutral track with a raised pill, not the system
 /// segmented control, which paints the selection in the accent colour and would

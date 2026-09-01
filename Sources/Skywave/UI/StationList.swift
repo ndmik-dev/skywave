@@ -12,6 +12,7 @@ struct StationList: View {
     @State private var selection: Int?
     @FocusState private var searchFocused: Bool
 
+
     private static let rowHeight: CGFloat = 30
     private static let maxHeight: CGFloat = 380
 
@@ -45,6 +46,10 @@ struct StationList: View {
             Divider()
             rows
         }
+        // Also on the container, not only on the text field: clicking a row
+        // moves focus to that button, and handlers living on the field alone
+        // stopped firing from then on. An ancestor still sees the key.
+        .modifier(KeyNavigation(list: self))
     }
 
     private var search: some View {
@@ -55,15 +60,9 @@ struct StationList: View {
             TextField("Search", text: $query)
                 .textFieldStyle(.plain)
                 .focused($searchFocused)
-                .onKeyPress(.upArrow) { move(-1); return .handled }
-                .onKeyPress(.downArrow) { move(1); return .handled }
-                .onKeyPress(.return) { playSelected(); return .handled }
-                .onKeyPress(.escape) {
-                    // First Escape clears the query, a second closes the panel.
-                    guard isSearching else { return .ignored }
-                    query = ""
-                    return .handled
-                }
+                // The field consumes arrows for its own insertion point, so it
+                // needs the handlers too — the ancestor never sees those keys.
+                .modifier(KeyNavigation(list: self))
                 // While searching, the top match is the obvious target for
                 // Enter, so the cursor is worth showing unasked.
                 .onChange(of: query) { _, text in
@@ -125,23 +124,35 @@ struct StationList: View {
         }
     }
 
-    /// The first press puts the cursor on the station that is playing, if any,
-    /// rather than jumping to the top of the list.
-    private func move(_ delta: Int) {
+    /// The first press lands on the end the key points at: Down on the first
+    /// row, Up on the last. It used to jump to whatever was playing, which read
+    /// as the arrows skipping half the list.
+    func move(_ delta: Int) {
         guard !visible.isEmpty else { return }
         guard let current = selection else {
-            selection = state.current.flatMap { station in
-                visible.firstIndex { $0.id == station.id }
-            } ?? 0
+            selection = delta > 0 ? 0 : visible.count - 1
             return
         }
-        selection = (current + delta + visible.count) % visible.count
+        // Clamped, not wrapped: wrapping from the last row back to the first is
+        // indistinguishable from the cursor vanishing.
+        selection = min(max(current + delta, 0), visible.count - 1)
     }
 
-    private func playSelected() {
+    func playSelected() {
         guard let index = selection, visible.indices.contains(index) else { return }
         state.toggle(visible[index])
+        // Clicking or playing must not strand the keyboard: focus goes back to
+        // the field so the next arrow press still works.
+        searchFocused = true
     }
+
+    func clearQuery() -> Bool {
+        guard isSearching else { return false }
+        query = ""
+        selection = nil
+        return true
+    }
+
 }
 
 private struct StationRow: View {
@@ -208,5 +219,22 @@ private struct GroupTitle: View {
             .padding(.horizontal, 6)
             .padding(.top, 2)
             .padding(.bottom, 5)
+    }
+}
+
+/// The arrow/Enter/Escape bindings, applied both to the search field and to the
+/// list around it so focus moving between them never leaves the keyboard dead.
+private struct KeyNavigation: ViewModifier {
+    let list: StationList
+
+    func body(content: Content) -> some View {
+        content
+            .onKeyPress(.upArrow) { list.move(-1); return .handled }
+            .onKeyPress(.downArrow) { list.move(1); return .handled }
+            .onKeyPress(.return) { list.playSelected(); return .handled }
+            .onKeyPress(.escape) {
+                // First Escape clears the query, a second closes the panel.
+                list.clearQuery() ? .handled : .ignored
+            }
     }
 }
