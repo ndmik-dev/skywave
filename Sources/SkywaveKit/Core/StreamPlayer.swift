@@ -18,11 +18,6 @@ public final class StreamPlayer {
     private var observations: [NSKeyValueObservation] = []
     private var notificationTasks: [Task<Void, Never>] = []
 
-    /// Keeps the last 60 seconds of audio available for "moments". Absent for
-    /// HLS items, which expose no track to tap.
-    public let capture = AudioCapture()
-    /// `false` once an attach attempt has failed for the current item.
-    public private(set) var canCapture = false
 
     public init() {
         (events, emit) = AsyncStream.makeStream(bufferingPolicy: .unbounded)
@@ -49,10 +44,6 @@ public final class StreamPlayer {
         metadataDelegate = delegate
 
         observe(item: item)
-        Task { [weak self] in
-            let attached = await self?.capture.attach(to: item) ?? false
-            self?.canCapture = attached
-        }
         player.replaceCurrentItem(with: item)
         player.volume = gain
         player.isMuted = muted
@@ -63,8 +54,6 @@ public final class StreamPlayer {
         notificationTasks.forEach { $0.cancel() }
         notificationTasks.removeAll()
         observations.removeAll()
-        capture.detach()
-        canCapture = false
         if let item, let metadataOutput { item.remove(metadataOutput) }
         metadataOutput = nil
         metadataDelegate = nil

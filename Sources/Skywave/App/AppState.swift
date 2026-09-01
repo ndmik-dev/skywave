@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Observation
 import SkywaveKit
@@ -18,6 +19,11 @@ final class AppState {
     private(set) var loginItemError: String?
     /// Why the stream is being re-established, if it is.
     private(set) var reconnecting: ReconnectReason?
+    private(set) var moments: [Moment] = []
+    /// Briefly set after a moment is kept, so the panel can say so.
+    private(set) var justSaved: Moment?
+    private(set) var momentError: String?
+
     /// What is on air across the catalog, keyed by station id. Only the eight
     /// polled stations can appear here — the rest reveal nothing until played.
     private(set) var onAir: [String: NowPlaying] = [:]
@@ -26,6 +32,7 @@ final class AppState {
     @ObservationIgnored private let nowPlayingCenter = NowPlayingCenter()
     @ObservationIgnored private let hotkeys = Hotkeys()
     @ObservationIgnored private let resilience = Resilience()
+    @ObservationIgnored private let recorder = StreamRecorder()
     @ObservationIgnored private var lastStation: Station?
     @ObservationIgnored private var pollTask: Task<Void, Never>?
     @ObservationIgnored private var boardTask: Task<Void, Never>?
@@ -141,8 +148,53 @@ final class AppState {
         isLoading = true
         resilience.noteStarted()
         player.play(url: station.stream, gain: station.gain)
+        // A second connection, because the player's own audio is unreachable on
+        // most stations. HLS is served in segments, so there is nothing to keep.
+        if station.adapter != .hls {
+            recorder.start(url: station.stream)
+        }
         startPolling(station)
         publish()
+    }
+
+    // MARK: - Moments
+
+    /// True while there is something worth keeping.
+    var canSaveMoment: Bool { recorder.isRunning }
+
+    func saveMoment() {
+        guard let station = current, let held = recorder.snapshot() else {
+            momentError = "Nothing captured yet"
+            return
+        }
+        Task {
+            do {
+                let moment = try await Moments.save(
+                    data: held.data,
+                    fileExtension: held.fileExtension,
+                    station: station,
+                    title: nowPlaying.track ?? nowPlaying.show
+                )
+                justSaved = moment
+                momentError = nil
+                await refreshMoments()
+            } catch {
+                momentError = error.localizedDescription
+            }
+        }
+    }
+
+    func refreshMoments() async {
+        moments = await Moments.saved()
+    }
+
+    func delete(_ moment: Moment) {
+        try? Moments.delete(moment)
+        moments.removeAll { $0.id == moment.id }
+    }
+
+    func reveal(_ moment: Moment) {
+        NSWorkspace.shared.activateFileViewerSelecting([moment.url])
     }
 
     /// Re-establishes the current stream, keeping the station selected so the
@@ -153,11 +205,15 @@ final class AppState {
         isLoading = true
         resilience.noteStarted()
         player.play(url: station.stream, gain: station.gain)
+        if station.adapter != .hls {
+            recorder.start(url: station.stream)
+        }
         publish()
     }
 
     func stop() {
         resilience.noteStopped()
+        recorder.stop()
         pollTask?.cancel()
         pollTask = nil
         player.stop()

@@ -3,6 +3,7 @@ import SkywaveKit
 
 struct PanelView: View {
     @Bindable var state: AppState
+    @State private var showingMoments = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -14,9 +15,13 @@ struct PanelView: View {
             } else {
                 OnAir(state: state)
                 Divider()
-                StationList(state: state)
+                if showingMoments {
+                    MomentsList(state: state)
+                } else {
+                    StationList(state: state)
+                }
                 Divider()
-                Footer(state: state)
+                Footer(state: state, showingMoments: $showingMoments)
             }
         }
         .frame(width: 300)
@@ -35,6 +40,13 @@ private struct OnAir: View {
                 HStack(spacing: 6) {
                     Text(station.name).font(.headline)
                     Spacer()
+                    if state.canSaveMoment {
+                        Button(action: state.saveMoment) {
+                            Image(systemName: "bookmark")
+                        }
+                        .buttonStyle(.borderless)
+                        .help("Keep the last minute")
+                    }
                     Button(action: state.stop) {
                         Image(systemName: "stop.fill")
                     }
@@ -67,6 +79,7 @@ private struct OnAir: View {
 
 private struct Footer: View {
     @Bindable var state: AppState
+    @Binding var showingMoments: Bool
     @State private var startsAtLogin = false
 
     var body: some View {
@@ -78,6 +91,12 @@ private struct Footer: View {
                     .lineLimit(2)
             }
             HStack {
+                Button(showingMoments ? "Stations" : "Moments") {
+                    showingMoments.toggle()
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(.secondary)
+                Spacer()
                 Text("⌥⌘P")
                     .font(.caption)
                     .foregroundStyle(.tertiary)

@@ -112,7 +112,10 @@ struct StationList: View {
                 station: station,
                 state: state,
                 isSelected: visible.indices.contains(selection)
-                    && visible[selection].id == station.id
+                    && visible[selection].id == station.id,
+                // Hovering moves the same selection the arrow keys move, so the
+                // panel never shows two competing highlights.
+                onHover: { if let index = visible.firstIndex(of: station) { selection = index } }
             )
             .id(station.id)
         }
@@ -132,10 +135,9 @@ struct StationList: View {
 private struct StationRow: View {
     let station: Station
     @Bindable var state: AppState
-    /// Highlighted by the arrow keys, as distinct from being on air.
+    /// The one row Enter would play. Moved by both the arrow keys and the mouse.
     let isSelected: Bool
-
-    @State private var isHovered = false
+    let onHover: () -> Void
 
     private var isCurrent: Bool { state.isCurrent(station) }
 
@@ -172,27 +174,22 @@ private struct StationRow: View {
             .background(background, in: .rect(cornerRadius: 5))
         }
         .buttonStyle(.plain)
-        .onHover { isHovered = $0 }
+        .onHover { if $0 { onHover() } }
     }
 
-    /// Empty unless the row means something: playing, or about to be. The frame
-    /// is reserved either way so names do not shift when playback starts.
+    /// Marks the station that is on air, and nothing else. The frame is reserved
+    /// either way so names do not shift when playback starts.
     private var indicator: some View {
         Group {
             if isCurrent {
                 Image(systemName: "speaker.wave.2.fill")
                     .foregroundStyle(.tint)
-            } else if isHovered || isSelected {
-                Image(systemName: "play.fill")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
         }
         .frame(width: 14)
     }
 
     private var background: Color {
-        if isSelected { return .primary.opacity(0.12) }
-        return isHovered ? .primary.opacity(0.07) : .clear
+        isSelected ? .primary.opacity(0.12) : .clear
     }
 }
