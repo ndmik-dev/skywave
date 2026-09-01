@@ -112,10 +112,7 @@ struct StationList: View {
                 station: station,
                 state: state,
                 isSelected: visible.indices.contains(selection)
-                    && visible[selection].id == station.id,
-                // Hovering moves the same selection the arrow keys move, so the
-                // panel never shows two competing highlights.
-                onHover: { if let index = visible.firstIndex(of: station) { selection = index } }
+                    && visible[selection].id == station.id
             )
             .id(station.id)
         }
@@ -135,9 +132,10 @@ struct StationList: View {
 private struct StationRow: View {
     let station: Station
     @Bindable var state: AppState
-    /// The one row Enter would play. Moved by both the arrow keys and the mouse.
+    /// The one row Enter would play. Moved by the arrow keys only — the mouse
+    /// deliberately does not highlight anything, so there is never more than one
+    /// mark on screen and it always means the same thing.
     let isSelected: Bool
-    let onHover: () -> Void
 
     private var isCurrent: Bool { state.isCurrent(station) }
 
@@ -174,7 +172,6 @@ private struct StationRow: View {
             .background(background, in: .rect(cornerRadius: 5))
         }
         .buttonStyle(.plain)
-        .onHover { if $0 { onHover() } }
     }
 
     /// Marks the station that is on air, and nothing else. The frame is reserved
