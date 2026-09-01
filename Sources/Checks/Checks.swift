@@ -13,6 +13,7 @@ struct Checks {
             catalogChecks()
             cleanupChecks()
             icyChecks()
+            favouriteChecks()
         }
         await resilienceChecks()
         await momentChecks()

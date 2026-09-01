@@ -37,8 +37,8 @@ struct StationList: View {
 
     private var isSearching: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
 
-    private var favourites: [Station] { state.stations.filter(\.favorite) }
-    private var others: [Station] { state.stations.filter { !$0.favorite } }
+    private var favourites: [Station] { state.stations.filter(state.isFavourite) }
+    private var others: [Station] { state.stations.filter { !state.isFavourite($0) } }
 
     /// The list in the order it is drawn, which is what the arrow keys walk.
     /// Built from the same two groups the body renders, so the two cannot drift.
@@ -261,6 +261,11 @@ private struct StationRow: View {
         }
         .buttonStyle(.plain)
         .onHover(perform: onHover)
+        .contextMenu {
+            Button(state.isFavourite(station) ? "Remove from favourites" : "Add to favourites") {
+                state.toggleFavourite(station)
+            }
+        }
     }
 }
 

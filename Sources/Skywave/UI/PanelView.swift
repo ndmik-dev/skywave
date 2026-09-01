@@ -38,6 +38,14 @@ struct PanelView: View {
             }
         }
         .frame(width: Theme.width)
+        .onKeyPress(phases: .down) { press in
+            guard press.modifiers.contains(.command) else { return .ignored }
+            switch press.characters {
+            case "1": mode = .stations; return .handled
+            case "2": mode = .moments; return .handled
+            default: return .ignored
+            }
+        }
         .onAppear { state.startWatchingOnAir() }
         .onDisappear { state.stopWatchingOnAir() }
     }
@@ -204,6 +212,10 @@ private struct Footer: View {
                 .buttonStyle(.plain)
                 .disabled(!state.canSaveMoment)
             }
+            Button(action: state.cycleSleepTimer) {
+                SleepRow(state: state)
+            }
+            .buttonStyle(.plain)
             Button {
                 startsAtLogin.toggle()
             } label: {
@@ -306,5 +318,31 @@ private struct ModeSwitch: View {
         }
         .padding(2)
         .background(.primary.opacity(0.07), in: .rect(cornerRadius: 7))
+    }
+}
+
+
+/// One row for the whole sleep timer: clicking walks 15 → 30 → 60 → 90 → off.
+///
+/// The countdown redraws through `TimelineView`, so ticking costs no observable
+/// state and the rest of the panel is not rebuilt once a second.
+private struct SleepRow: View {
+    @Bindable var state: AppState
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            FooterRow(
+                icon: state.sleepUntil == nil ? "moon" : "moon.fill",
+                title: title(at: context.date),
+                key: "",
+                enabled: true
+            )
+        }
+    }
+
+    private func title(at now: Date) -> String {
+        guard let until = state.sleepUntil else { return "Sleep timer" }
+        let left = max(0, Int(until.timeIntervalSince(now).rounded()))
+        return String(format: "Sleeps in %d:%02d", left / 60, left % 60)
     }
 }

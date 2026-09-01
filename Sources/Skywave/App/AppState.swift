@@ -1,3 +1,4 @@
+import AVFoundation
 import AppKit
 import Foundation
 import Observation
@@ -31,6 +32,11 @@ final class AppState {
     /// station starts, or the button stays frozen in its old state.
     private(set) var canSaveMoment = false
 
+    /// When playback will stop by itself, if a sleep timer is running.
+    private(set) var sleepUntil: Date?
+    /// The moment being previewed, if any.
+    private(set) var playingMomentID: String?
+
     /// What is on air across the catalog, keyed by station id. Only the eight
     /// polled stations can appear here — the rest reveal nothing until played.
     private(set) var onAir: [String: NowPlaying] = [:]
@@ -41,10 +47,17 @@ final class AppState {
     @ObservationIgnored private let resilience = Resilience()
     @ObservationIgnored private let recorder = StreamRecorder()
     @ObservationIgnored private let notifications = Notifications()
+    /// Bumped whenever favourites change, so the list redraws — `Favourites`
+    /// itself lives in user defaults, which observation cannot see.
+    private(set) var favouritesRevision = 0
+    @ObservationIgnored private var favourites = Favourites()
     @ObservationIgnored private var lastStation: Station?
     @ObservationIgnored private var pollTask: Task<Void, Never>?
     @ObservationIgnored private var boardTask: Task<Void, Never>?
     @ObservationIgnored private var eventTask: Task<Void, Never>?
+    @ObservationIgnored private var sleepTask: Task<Void, Never>?
+    @ObservationIgnored private var sleepSetAt = Date.distantPast
+    @ObservationIgnored private var momentPlayer: AVAudioPlayer?
 
     /// Shows change on the hour and tracks every few minutes, so polling is lazy.
     private let pollInterval = Duration.seconds(15)
@@ -124,6 +137,16 @@ final class AppState {
 
     var stations: [Station] { catalog?.stations ?? [] }
 
+    func isFavourite(_ station: Station) -> Bool {
+        _ = favouritesRevision
+        return favourites.contains(station)
+    }
+
+    func toggleFavourite(_ station: Station) {
+        favourites.toggle(station, in: catalog)
+        favouritesRevision += 1
+    }
+
     func isCurrent(_ station: Station) -> Bool { current?.id == station.id }
 
     /// Media keys and the global hotkey.
@@ -170,6 +193,7 @@ final class AppState {
     }
 
     func play(_ station: Station) {
+        stopMoment()
         current = station
         lastStation = station
         notifications.reset(station: station)
@@ -195,6 +219,50 @@ final class AppState {
         }
         recorder.start(url: station.stream)
         canSaveMoment = true
+    }
+
+    // MARK: - Sleep timer
+
+    /// The offered lengths, in minutes. Clicking the footer row walks the list
+    /// and then switches off, which keeps the whole feature to one row.
+    static let sleepOptions = [15, 30, 60, 90]
+
+    /// Minutes on the current timer, or nil when none is set.
+    var sleepMinutes: Int? {
+        guard let sleepUntil else { return nil }
+        return Self.sleepOptions.first { minutes in
+            // Match on what was set, not on what is left.
+            abs(sleepUntil.timeIntervalSince(sleepSetAt) - Double(minutes * 60)) < 1
+        }
+    }
+
+    func cycleSleepTimer() {
+        let next: Int?
+        switch sleepMinutes {
+        case nil: next = Self.sleepOptions.first
+        case let current?:
+            let index = Self.sleepOptions.firstIndex(of: current).map { $0 + 1 } ?? Self.sleepOptions.count
+            next = index < Self.sleepOptions.count ? Self.sleepOptions[index] : nil
+        }
+        setSleepTimer(minutes: next)
+    }
+
+    func setSleepTimer(minutes: Int?) {
+        sleepTask?.cancel()
+        sleepTask = nil
+        guard let minutes else {
+            sleepUntil = nil
+            return
+        }
+        sleepSetAt = Date()
+        let deadline = sleepSetAt.addingTimeInterval(Double(minutes * 60))
+        sleepUntil = deadline
+        sleepTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(Double(minutes * 60)))
+            guard !Task.isCancelled, let self else { return }
+            self.sleepUntil = nil
+            self.pause()
+        }
     }
 
     // MARK: - Moments
@@ -235,12 +303,45 @@ final class AppState {
     }
 
     func delete(_ moment: Moment) {
+        if playingMomentID == moment.id { stopMoment() }
         try? Moments.delete(moment)
         moments.removeAll { $0.id == moment.id }
     }
 
     func reveal(_ moment: Moment) {
         NSWorkspace.shared.activateFileViewerSelecting([moment.url])
+    }
+
+    /// Previews a kept moment in place. Radio pauses first — two things playing
+    /// over each other is never what was meant.
+    func toggleMoment(_ moment: Moment) {
+        if playingMomentID == moment.id {
+            stopMoment()
+            return
+        }
+        stopMoment()
+        if isPlaying { pause() }
+        guard let player = try? AVAudioPlayer(contentsOf: moment.url) else {
+            momentError = "Could not play \(moment.url.lastPathComponent)"
+            return
+        }
+        momentPlayer = player
+        playingMomentID = moment.id
+        player.play()
+        // AVAudioPlayer's delegate is one more object to own for a preview this
+        // small; polling the end is enough.
+        Task { [weak self] in
+            while let self, self.momentPlayer === player, player.isPlaying {
+                try? await Task.sleep(for: .milliseconds(300))
+            }
+            if let self, self.momentPlayer === player { self.stopMoment() }
+        }
+    }
+
+    func stopMoment() {
+        momentPlayer?.stop()
+        momentPlayer = nil
+        playingMomentID = nil
     }
 
     /// Re-establishes the current stream, keeping the station selected so the

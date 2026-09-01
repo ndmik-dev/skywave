@@ -52,12 +52,25 @@ private struct MomentRow: View {
     @Bindable var state: AppState
     @State private var isHovered = false
 
+    private var isPlaying: Bool { state.playingMomentID == moment.id }
+
     var body: some View {
         Button {
-            state.reveal(moment)
+            state.toggleMoment(moment)
         } label: {
             HStack(spacing: 11) {
-                Waveform(seed: moment.id)
+                Waveform(seed: moment.id, active: isPlaying)
+                    .overlay {
+                        // The waveform doubles as the transport control: a
+                        // separate play button would crowd a 344pt row.
+                        if isHovered || isPlaying {
+                            Image(systemName: isPlaying ? "stop.fill" : "play.fill")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.white)
+                                .padding(5)
+                                .background(.black.opacity(0.55), in: .circle)
+                        }
+                    }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(moment.title ?? moment.stationName)
                         .font(.system(size: 12.5, weight: .semibold))
@@ -69,6 +82,15 @@ private struct MomentRow: View {
                 }
                 Spacer(minLength: 0)
                 if isHovered {
+                    Button {
+                        state.reveal(moment)
+                    } label: {
+                        Image(systemName: "folder")
+                            .font(.system(size: 11))
+                    }
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(.secondary)
+                    .help("Show in Finder")
                     Button {
                         state.delete(moment)
                     } label: {
@@ -101,16 +123,18 @@ private struct MomentRow: View {
 /// clip always looks like itself rather than reshuffling on every redraw.
 private struct Waveform: View {
     let seed: String
+    var active = false
 
     var body: some View {
         HStack(alignment: .center, spacing: 1.5) {
             ForEach(Array(bars.enumerated()), id: \.offset) { _, height in
                 Capsule()
-                    .fill(Theme.signal.opacity(0.85))
+                    .fill(Theme.signal.opacity(active ? 1 : 0.85))
                     .frame(width: 2, height: height)
             }
         }
         .frame(width: 70, height: 30)
+        .opacity(active ? 1 : 0.9)
     }
 
     private var bars: [CGFloat] {
