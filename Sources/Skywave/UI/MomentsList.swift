@@ -10,7 +10,7 @@ struct MomentsList: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("Моменти")
+                Text("Moments")
                     .font(.system(size: 13, weight: .semibold))
                 Spacer()
                 Text(count)
@@ -22,7 +22,7 @@ struct MomentsList: View {
             .padding(.bottom, 4)
 
             if state.moments.isEmpty {
-                Text("Поки нічого не збережено")
+                Text("Nothing kept yet")
                     .font(.system(size: 12.5))
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 14)
@@ -43,7 +43,7 @@ struct MomentsList: View {
     }
 
     private var count: String {
-        state.moments.isEmpty ? "" : "\(state.moments.count) збережено"
+        state.moments.isEmpty ? "" : "\(state.moments.count) kept"
     }
 }
 
@@ -77,7 +77,7 @@ private struct MomentRow: View {
                     }
                     .buttonStyle(.borderless)
                     .foregroundStyle(.secondary)
-                    .help("Видалити")
+                    .help("Delete")
                 }
             }
             .padding(.horizontal, 6)
@@ -91,7 +91,7 @@ private struct MomentRow: View {
 
     private var subtitle: String {
         let when = moment.capturedAt.formatted(date: .abbreviated, time: .shortened)
-        let length = moment.duration > 0 ? " · \(Int(moment.duration.rounded())) с" : ""
+        let length = moment.duration > 0 ? " · \(Int(moment.duration.rounded()))s" : ""
         // The first line already carries the show when there was one.
         return moment.title == nil ? "\(when)\(length)" : "\(moment.stationName) · \(when)\(length)"
     }

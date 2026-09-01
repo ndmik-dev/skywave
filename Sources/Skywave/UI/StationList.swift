@@ -50,7 +50,7 @@ struct StationList: View {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.tertiary)
                 .font(.callout)
-            TextField("Пошук", text: $query)
+            TextField("Search", text: $query)
                 .textFieldStyle(.plain)
                 .focused($searchFocused)
                 .onKeyPress(.upArrow) { move(-1); return .handled }
@@ -74,7 +74,7 @@ struct StationList: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
                     if visible.isEmpty {
-                        Text("Нічого не знайшлося")
+                        Text("Nothing matches")
                             .font(.system(size: 12.5))
                             .foregroundStyle(.secondary)
                             .padding(.horizontal, 14)
@@ -82,12 +82,12 @@ struct StationList: View {
                     } else if isSearching {
                         rowGroup(visible)
                     } else {
-                        GroupTitle("Улюблені")
+                        GroupTitle("Favourites")
                         rowGroup(state.stations.filter(\.favorite))
                         let rest = state.stations.filter { !$0.favorite }
                         if !rest.isEmpty {
                             Divider().padding(.horizontal, 10).padding(.vertical, 4)
-                            GroupTitle("Усі станції")
+                            GroupTitle("All stations")
                             rowGroup(rest)
                         }
                     }
@@ -133,9 +133,9 @@ struct StationList: View {
 private struct StationRow: View {
     let station: Station
     @Bindable var state: AppState
-    /// The one row Enter would play. Moved by the arrow keys only — the mouse
-    /// deliberately does not highlight anything, so there is never more than one
-    /// mark on screen and it always means the same thing.
+    /// The row the arrow keys are on, which Enter would play. The mouse never
+    /// moves it, so the panel shows at most two marks and they never mean the
+    /// same thing: solid red is what is playing, grey is where the keys are.
     let isSelected: Bool
 
     private var isCurrent: Bool { state.isCurrent(station) }
@@ -144,8 +144,13 @@ private struct StationRow: View {
     /// no line rather than an invented one.
     private var show: String? {
         guard let playing = state.onAir[station.id] else { return nil }
-        if playing.isOffAir { return "не в ефірі" }
+        if playing.isOffAir { return "off air" }
         return playing.show ?? playing.track
+    }
+
+    private var background: Color {
+        if isCurrent { return Theme.signal }
+        return isSelected ? .primary.opacity(0.09) : .clear
     }
 
     var body: some View {
@@ -161,22 +166,17 @@ private struct StationRow: View {
                 if let show {
                     Text(show)
                         .font(.system(size: 12))
-                        .foregroundStyle(isSelected ? AnyShapeStyle(.white.opacity(0.8)) : AnyShapeStyle(.tertiary))
+                        .foregroundStyle(isCurrent ? AnyShapeStyle(.white.opacity(0.8)) : AnyShapeStyle(.tertiary))
                         .lineLimit(1)
                         .truncationMode(.tail)
                 }
-                if isCurrent {
-                    Image(systemName: "speaker.wave.2.fill")
-                        .font(.system(size: 10))
-                        .foregroundStyle(isSelected ? AnyShapeStyle(.white) : AnyShapeStyle(Theme.signal))
-                }
             }
-            .foregroundStyle(isSelected ? AnyShapeStyle(.white) : AnyShapeStyle(.primary))
+            .foregroundStyle(isCurrent ? AnyShapeStyle(.white) : AnyShapeStyle(.primary))
             .padding(.horizontal, 6)
             .padding(.vertical, 6)
             .frame(minHeight: 30)
             .contentShape(.rect)
-            .background(isSelected ? Theme.signal : .clear, in: .rect(cornerRadius: 6))
+            .background(background, in: .rect(cornerRadius: 6))
         }
         .buttonStyle(.plain)
     }

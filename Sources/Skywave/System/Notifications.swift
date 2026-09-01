@@ -40,7 +40,7 @@ final class Notifications {
         reportedTrouble.insert(station.id)
         post(
             title: station.name,
-            body: "Не відповідає. Продовжую пробувати.",
+            body: "Not responding. Still trying.",
             id: "trouble-\(station.id)"
         )
     }

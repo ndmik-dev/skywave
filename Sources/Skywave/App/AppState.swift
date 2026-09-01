@@ -23,6 +23,9 @@ final class AppState {
     /// Briefly set after a moment is kept, so the panel can say so.
     private(set) var justSaved: Moment?
     private(set) var momentError: String?
+    /// Observable, unlike the recorder itself: the panel has to redraw when a
+    /// station starts, or the button stays frozen in its old state.
+    private(set) var canSaveMoment = false
 
     /// What is on air across the catalog, keyed by station id. Only the eight
     /// polled stations can appear here — the rest reveal nothing until played.
@@ -157,18 +160,17 @@ final class AppState {
         resilience.noteStarted()
         player.play(url: station.stream, gain: station.gain)
         // A second connection, because the player's own audio is unreachable on
-        // most stations. HLS is served in segments, so there is nothing to keep.
+        // most stations.
+        // HLS is served in segments, so there is nothing to keep.
         if station.adapter != .hls {
             recorder.start(url: station.stream)
+            canSaveMoment = true
         }
         startPolling(station)
         publish()
     }
 
     // MARK: - Moments
-
-    /// True while there is something worth keeping.
-    var canSaveMoment: Bool { recorder.isRunning }
 
     func saveMoment() {
         guard let station = current, let held = recorder.snapshot() else {
@@ -218,6 +220,7 @@ final class AppState {
         player.play(url: station.stream, gain: station.gain)
         if station.adapter != .hls {
             recorder.start(url: station.stream)
+            canSaveMoment = true
         }
         publish()
     }
@@ -225,6 +228,7 @@ final class AppState {
     func stop() {
         resilience.noteStopped()
         recorder.stop()
+        canSaveMoment = false
         pollTask?.cancel()
         pollTask = nil
         player.stop()
