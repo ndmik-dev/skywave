@@ -58,6 +58,7 @@ final class AppState {
     private(set) var favouritesRevision = 0
     @ObservationIgnored private var favourites = Favourites()
     @ObservationIgnored private var reachability = Reachability()
+    @ObservationIgnored private var playLog = PlayLog()
     @ObservationIgnored private var lastStation: Station?
     @ObservationIgnored private var pollTask: Task<Void, Never>?
     @ObservationIgnored private var boardTask: Task<Void, Never>?
@@ -449,6 +450,9 @@ final class AppState {
                     unreachable.remove(current.id)
                     reachability.noteHeard(current)
                     reachabilityRevision += 1
+                    // Counted on sound, not on the click: a dead station that
+                    // never played is not a station that got chosen.
+                    playLog.notePlayed(current)
                 }
             } else {
                 resilience.notePaused()

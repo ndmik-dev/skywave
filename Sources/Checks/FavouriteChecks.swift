@@ -89,3 +89,39 @@ func reachabilityChecks() {
         defaults.removePersistentDomain(forName: suite)
     }
 }
+
+
+/// The play log is the one number the month is meant to produce, so its
+/// window arithmetic has to be right on the edges.
+@MainActor
+func playLogChecks() {
+    Expect.suite("play log") {
+        let suite = "skywave.checks.playlog"
+        let defaults = UserDefaults(suiteName: suite)!
+        defaults.removePersistentDomain(forName: suite)
+        let catalog = try Catalog.bundled()
+        let nts = catalog.stations[0], dublab = catalog.stations[1]
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date()).addingTimeInterval(12 * 3600)
+        func daysAgo(_ n: Int) -> Date { calendar.date(byAdding: .day, value: -n, to: today)! }
+
+        var log = PlayLog(defaults: defaults)
+        Expect.equal(log.daysPlayed(nts, now: today), 0, "nothing before anything is heard")
+
+        log.notePlayed(nts, on: today)
+        log.notePlayed(nts, on: today.addingTimeInterval(3600))
+        Expect.equal(log.daysPlayed(nts, now: today), 1, "two plays on one day count once")
+
+        log.notePlayed(nts, on: daysAgo(29))
+        Expect.equal(log.daysPlayed(nts, now: today), 2, "day 29 back is inside a 30-day window")
+        log.notePlayed(nts, on: daysAgo(30))
+        Expect.equal(log.daysPlayed(nts, now: today), 2, "day 30 back is outside it")
+        Expect.equal(log.daysPlayedEver(nts), 3, "but still counted ever")
+
+        log.notePlayed(dublab, on: daysAgo(29))
+        Expect.equal(log.activeDays(now: today), 2, "active days are distinct across stations")
+
+        Expect.equal(PlayLog(defaults: defaults).daysPlayedEver(nts), 3, "survives a reload")
+        defaults.removePersistentDomain(forName: suite)
+    }
+}

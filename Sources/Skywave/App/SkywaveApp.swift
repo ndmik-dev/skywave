@@ -18,6 +18,10 @@ enum Main {
         }
         // Headless playback check, used to verify App Transport Security rules
         // against the real bundle: --play <station-id> [seconds]
+        // The month's measurement: days each station was heard.
+        if CommandLine.arguments.contains("--played") {
+            exit(MainActor.assumeIsolated { Played.report() })
+        }
         if let flag = CommandLine.arguments.firstIndex(of: "--play"),
            flag + 1 < CommandLine.arguments.count {
             let id = CommandLine.arguments[flag + 1]
