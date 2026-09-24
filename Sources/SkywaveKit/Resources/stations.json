@@ -6,7 +6,7 @@
     {
       "id": "nts-1",
       "name": "NTS",
-      "city": "Лондон",
+      "city": "London",
       "stream": "https://stream-relay-geo.ntslive.net/stream",
       "adapter": "nts",
       "gain": 0.562,
@@ -18,7 +18,7 @@
     {
       "id": "dublab",
       "name": "dublab",
-      "city": "Лос-Анджелес",
+      "city": "Los Angeles",
       "stream": "https://dublab.out.airtime.pro/dublab_a",
       "adapter": "airtime",
       "gain": 0.977,
@@ -30,7 +30,7 @@
     {
       "id": "the-lot-radio",
       "name": "The Lot Radio",
-      "city": "Нью-Йорк",
+      "city": "New York",
       "stream": "https://livepeercdn.studio/hls/85c28sa2o8wppm58/index.m3u8",
       "adapter": "hls",
       "gain": 1.0,
@@ -42,7 +42,7 @@
     {
       "id": "cashmere-radio",
       "name": "Cashmere Radio",
-      "city": "Берлін",
+      "city": "Berlin",
       "stream": "https://cashmereradio.out.airtime.pro/cashmereradio_a",
       "adapter": "airtime",
       "gain": 0.457,
@@ -54,7 +54,7 @@
     {
       "id": "rinse-fm",
       "name": "Rinse FM",
-      "city": "Лондон",
+      "city": "London",
       "stream": "https://admin.stream.rinse.fm/proxy/rinse_uk/stream",
       "adapter": "icy",
       "gain": 0.335,
@@ -65,7 +65,7 @@
     {
       "id": "somafm-drone-zone",
       "name": "Drone Zone",
-      "city": "Сан-Франциско",
+      "city": "San Francisco",
       "stream": "https://ice1.somafm.com/dronezone-256-mp3",
       "adapter": "icy",
       "gain": 0.955,
@@ -76,7 +76,7 @@
     {
       "id": "kool-fm",
       "name": "Kool FM",
-      "city": "Лондон",
+      "city": "London",
       "stream": "https://admin.stream.rinse.fm/proxy/kool/stream",
       "adapter": "icy",
       "gain": 0.403,
@@ -87,7 +87,7 @@
     {
       "id": "swu-fm",
       "name": "SWU FM",
-      "city": "Бристоль",
+      "city": "Bristol",
       "stream": "https://admin.stream.rinse.fm/proxy/swu/stream",
       "adapter": "icy",
       "gain": 0.394,
@@ -97,7 +97,7 @@
     {
       "id": "kiosk-radio",
       "name": "Kiosk Radio",
-      "city": "Брюссель",
+      "city": "Brussels",
       "stream": "https://kioskradiobxl.out.airtime.pro/kioskradiobxl_b",
       "adapter": "airtime",
       "gain": 0.668,
@@ -109,7 +109,7 @@
     {
       "id": "intergalactic-fm",
       "name": "Intergalactic FM",
-      "city": "Гаага",
+      "city": "The Hague",
       "stream": "https://radio.intergalactic.fm/1",
       "adapter": "icy",
       "gain": 1.0,
@@ -120,7 +120,7 @@
     {
       "id": "mutant-radio",
       "name": "Mutant Radio",
-      "city": "Тбілісі",
+      "city": "Tbilisi",
       "stream": "https://listen.radioking.com/radio/282820/stream/328621",
       "adapter": "icy",
       "gain": 1.0,
@@ -131,7 +131,7 @@
     {
       "id": "operator-radio",
       "name": "Operator Radio",
-      "city": "Роттердам",
+      "city": "Rotterdam",
       "stream": "https://origin.streamnerd.nl/operator/operator/icecast.audio",
       "adapter": "icy",
       "gain": 0.832,
@@ -142,7 +142,7 @@
     {
       "id": "radio-alhara",
       "name": "Radio Alhara",
-      "city": "Віфлеєм",
+      "city": "Bethlehem",
       "stream": "http://n02.radiojar.com/78cxy6wkxtzuv",
       "adapter": "icy",
       "gain": 0.977,
@@ -152,7 +152,7 @@
     {
       "id": "wfmu",
       "name": "WFMU",
-      "city": "Нью-Джерсі",
+      "city": "New Jersey",
       "stream": "https://stream0.wfmu.org/freeform-extrahigh-primary.aac",
       "adapter": "icy",
       "gain": 1.0,
@@ -163,7 +163,7 @@
     {
       "id": "worldwide-fm",
       "name": "Worldwide FM",
-      "city": "Лондон",
+      "city": "London",
       "stream": "https://worldwide-fm.radiocult.fm/stream",
       "adapter": "radiocult",
       "gain": 0.724,
@@ -175,7 +175,7 @@
     {
       "id": "somafm-groove-salad",
       "name": "Groove Salad",
-      "city": "Сан-Франциско",
+      "city": "San Francisco",
       "stream": "https://ice1.somafm.com/groovesalad-256-mp3",
       "adapter": "icy",
       "gain": 0.871,
@@ -186,7 +186,7 @@
     {
       "id": "refuge-worldwide",
       "name": "Refuge Worldwide",
-      "city": "Берлін",
+      "city": "Berlin",
       "stream": "https://streaming.radio.co/s3699c5e49/listen",
       "adapter": "radioco",
       "gain": 0.525,
@@ -198,7 +198,7 @@
     {
       "id": "bytefm",
       "name": "ByteFM",
-      "city": "Гамбург",
+      "city": "Hamburg",
       "stream": "https://uplink.byte.fm/bytefm-mainhq/mp3-192/",
       "adapter": "icy",
       "gain": 1.0,
@@ -209,7 +209,7 @@
     {
       "id": "the-face-radio",
       "name": "The Face Radio",
-      "city": "Бруклін",
+      "city": "Brooklyn",
       "stream": "https://the-face-radio.radiocult.fm/stream",
       "adapter": "radiocult",
       "gain": 0.299,
@@ -221,7 +221,7 @@
     {
       "id": "noods-radio",
       "name": "Noods Radio",
-      "city": "Бристоль",
+      "city": "Bristol",
       "stream": "https://noods-radio.radiocult.fm/stream",
       "adapter": "radiocult",
       "gain": 1.0,

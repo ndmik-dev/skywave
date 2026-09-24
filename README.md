@@ -60,7 +60,7 @@ The catalog is [`stations.json`](Sources/SkywaveKit/Resources/stations.json), an
 {
   "id": "dublab",
   "name": "dublab",
-  "city": "Лос-Анджелес",
+  "city": "Los Angeles",
   "stream": "https://dublab.out.airtime.pro/dublab_a",
   "adapter": "airtime",
   "adapterId": "dublab",
