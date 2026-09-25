@@ -52,6 +52,8 @@ open_panel() {
 		se 'perform action "AXPress" of (first menu bar item of menu bar 2)' >/dev/null
 		sleep 1.2
 	fi
+	# The scroll indicator flashes when a list appears; give it time to fade.
+	sleep 2
 }
 
 # The panel's frame comes from Accessibility, in the same screen points that
@@ -67,7 +69,7 @@ capture() {
 open_panel
 capture stations
 se 'keystroke "2" using command down' >/dev/null
-sleep 0.8
+sleep 2.5
 capture moments
 se 'keystroke "1" using command down' >/dev/null
 sleep 0.3
